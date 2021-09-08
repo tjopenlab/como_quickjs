@@ -18,9 +18,6 @@
 #define __COMO_PYTYPES_H__
 
 #include <comoapi.h>
-#include <pybind11/pybind11.h>
-
-namespace py = pybind11;
 
 class MetaCoclass;
 

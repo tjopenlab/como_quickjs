@@ -17,7 +17,6 @@
 #ifndef __COMO_BRIDGE_H__
 #define __COMO_BRIDGE_H__
 
-#include <pybind11/stl.h>
 #include <comoapi.h>
 #include "como_pytypes.h"
 
