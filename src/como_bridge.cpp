@@ -332,7 +332,7 @@ py::tuple ComoPyClassStub::methodimpl(IMetaMethod *method, py::args args, py::kw
                 case TypeKind::Interface: {
                     AutoPtr<IMetaCoclass> mCoclass_;
                     String name, ns;
-                    std::map<std::string, py::class_<ComoPyClassStub>>::iterator iter;
+                    std::map<std::string, ComoPyClassStub>::iterator iter;
 
                     if (signatureBreak.empty()) {
                         method->GetSignature(signature);
@@ -424,7 +424,7 @@ py::tuple ComoPyClassStub::methodimpl(IMetaMethod *method, py::args args, py::kw
                     case TypeKind::Interface: {
                         AutoPtr<IMetaCoclass> mCoclass_;
                         String name, ns;
-                        std::map<std::string, py::class_<ComoPyClassStub>>::iterator iter;
+                        std::map<std::string, ComoPyClassStub>::iterator iter;
 
                         AutoPtr<IInterface> thisObject_ = reinterpret_cast<IInterface*>(outResult[i]);
                         IObject::Probe(thisObject_)->GetCoclass(mCoclass_);
@@ -432,7 +432,7 @@ py::tuple ComoPyClassStub::methodimpl(IMetaMethod *method, py::args args, py::kw
                         mCoclass_->GetNamespace(ns);
                         iter = g_como_classes.find((ns + "." + name).string());
                         if (iter != g_como_classes.end()) {
-                            py::class_<ComoPyClassStub> py_cls = iter->second;
+                            ComoPyClassStub py_cls = iter->second;
                             py::object py_obj = py_cls();
                             out_tuple = py::make_tuple(out_tuple, py_obj);
                         }

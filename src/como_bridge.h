@@ -27,7 +27,7 @@ class MetaValue;
 class MetaCoclass;
 
 #define MAX_METHOD_NAME_LENGTH 1024
-extern std::map<std::string, py::class_<ComoPyClassStub>> g_como_classes;
+extern std::map<std::string, ComoPyClassStub> g_como_classes;
 
 // MetaComponent
 ///////////////////////////////
