@@ -32,13 +32,13 @@ std::string MetaComponent::GetComponentID() {
     return std::string(str.string());
 }
 
-std::map<std::string, py::object> MetaComponent::GetAllConstants() {
+std::map<std::string, JSValue> MetaComponent::GetAllConstants() {
     Integer constantNumber;
     componentHandle->GetConstantNumber(constantNumber);
     Array<IMetaConstant*> constants(constantNumber);
     componentHandle->GetAllConstants(constants);
 
-    return constantsToMap(constants);
+    return constantsToMap(ctx, constants);
 }
 
 void MetaComponent::GetAllCoclasses() {
@@ -48,7 +48,7 @@ void MetaComponent::GetAllCoclasses() {
     componentHandle->GetAllCoclasses(klasses);
     for (int i = 0;  i < number;  i++) {
         MetaCoclass *metaCoclass;
-        metaCoclass = new MetaCoclass(klasses[i]);
+        metaCoclass = new MetaCoclass(ctx, klasses[i]);
         como_classes.push_back(metaCoclass);
     }
 }
@@ -104,9 +104,9 @@ AutoPtr<IInterface> MetaCoclass::CreateObject() {
     return object;
 }
 
-void MetaCoclass::constructObj(ComoPyClassStub* stub, py::args args, py::kwargs kwargs)
+void MetaCoclass::constructObj(ComoJsClassStub* stub, int argc, JSValueConst *argv)
 {
-    const char *signature = std::string(py::str(args[0])).c_str();
+    const char *signature = JS_ToCString(ctx, argv[0]);
     AutoPtr<IMetaConstructor> constr;
 
     ECode ec = metaCoclass->GetConstructor(signature, constr);
@@ -118,24 +118,26 @@ void MetaCoclass::constructObj(ComoPyClassStub* stub, py::args args, py::kwargs 
         stub->thisObject = nullptr;
         return;
     }
-    stub->methodimpl(constr, args, kwargs, true);
+    stub->methodimpl(constr, argc, argv, true);
 }
 
-// ComoPyClassStub
+// ComoJsClassStub
 ///////////////////////////////
-ComoPyClassStub::ComoPyClassStub(MetaCoclass *mCoclass)
-    : thisObject(nullptr),
+ComoJsClassStub::ComoJsClassStub(JSContext *ctx_, MetaCoclass *mCoclass)
+    : ctx(ctx_)
+    , thisObject(nullptr),
     methods(mCoclass->methods)
 {}
 
-ComoPyClassStub::ComoPyClassStub(MetaCoclass *mCoclass, AutoPtr<IInterface> thisObject_)
-    : thisObject(thisObject_),
+ComoJsClassStub::ComoJsClassStub(JSContext *ctx_, MetaCoclass *mCoclass, AutoPtr<IInterface> thisObject_)
+    : ctx(ctx_)
+    , thisObject(thisObject_),
     methods(mCoclass->methods)
 {}
 
 
-std::map<std::string, py::object> ComoPyClassStub::GetAllConstants() {
-    std::map<std::string, py::object> out;
+std::map<std::string, JSValue> ComoJsClassStub::GetAllConstants() {
+    std::map<std::string, JSValue> out;
 
     AutoPtr<IMetaCoclass> metaCoclass;
     IObject::Probe(thisObject)->GetCoclass(metaCoclass);
@@ -148,11 +150,11 @@ std::map<std::string, py::object> ComoPyClassStub::GetAllConstants() {
         Integer constantNumber;
         interfaces[i]->GetConstantNumber(constantNumber);
         if (constantNumber > 0) {
-            std::map<std::string, py::object> out_;
+            std::map<std::string, JSValue> out_;
 
             Array<IMetaConstant*> constants(constantNumber);
             interfaces[i]->GetAllConstants(constants);
-            out_ = constantsToMap(constants);
+            out_ = constantsToMap(ctx, constants);
 
             out.insert(out_.begin(), out_.end());
         }
@@ -160,18 +162,7 @@ std::map<std::string, py::object> ComoPyClassStub::GetAllConstants() {
     return out;
 }
 
-/*
-The class py::args derives from py::tuple and py::kwargs derives from py::dict.
-Python types available wrappers https://pybind11.readthedocs.io/en/stable/advanced/pycpp/object.html
-
-py::args args[] operator
-    // https://docs.python.org/3/c-api/tuple.html
-    PyObject* PyTuple_GetItem(PyObject *p, Py_ssize_t pos)
-    Return value: Borrowed reference.
-    Return the object at position pos in the tuple pointed to by p. If pos is out of bounds, return
-    NULL and set an IndexError exception.
-*/
-py::tuple ComoPyClassStub::methodimpl(IMetaMethod *method, py::args args, py::kwargs kwargs, bool isConstructor) {
+JSValue ComoJsClassStub::methodimpl(IMetaMethod *method, int argc, JSValueConst *argv, bool isConstructor) {
     ECode ec = 0;
     AutoPtr<IArgumentList> argList;
     Boolean outArgs;
@@ -179,10 +170,9 @@ py::tuple ComoPyClassStub::methodimpl(IMetaMethod *method, py::args args, py::kw
     method->HasOutArguments(outArgs);
     method->GetParameterNumber(paramNumber);
 
-    py::tuple out_tuple;
+    JSValue out_JSValue;
     HANDLE *outResult = nullptr;
     if (outArgs) {
-        py::tuple out_tuple = py::make_tuple();
         outResult = (HANDLE*)calloc(sizeof(HANDLE), paramNumber);
     }
 
@@ -208,6 +198,11 @@ py::tuple ComoPyClassStub::methodimpl(IMetaMethod *method, py::args args, py::kw
         AutoPtr<IMetaType> type;
         String tname;
         TypeKind kind;
+        int iValue;
+        int64_t lValue;
+        bool bValue;
+        double dValue;
+        char *sValue;
 
         param->GetName(name);
         param->GetIndex(index);
@@ -217,68 +212,66 @@ py::tuple ComoPyClassStub::methodimpl(IMetaMethod *method, py::args args, py::kw
         type->GetTypeKind(kind);
 
         if (attr == IOAttribute::IN) {
-            if (inParam >= args.size()) {
+            if (inParam >= argc) {
                 // too much COMO input paramter
                 ec = E_ILLEGAL_ARGUMENT_EXCEPTION;
                 break;
             }
             switch (kind) {
                 case TypeKind::Byte:
-                    if (kwargs.contains(name.string()))
-                        argList->SetInputArgumentOfByte(i, int(py::int_(kwargs[name.string()])));
-                    else
-                        argList->SetInputArgumentOfByte(i, int(py::int_(args[inParam++])));
+                    if (JS_ToInt32(ctx, &iValue, argv[inParam++]))
+                        iValue = -1;
+
+                    argList->SetInputArgumentOfByte(i, iValue);
                     break;
                 case TypeKind::Short:
-                    if (kwargs.contains(name.string()))
-                        argList->SetInputArgumentOfShort(i, int(py::int_(kwargs[name.string()])));
-                    else
-                        argList->SetInputArgumentOfShort(i, int(py::int_(args[inParam++])));
+                    if (JS_ToInt32(ctx, &iValue, argv[inParam++]))
+                        iValue = -1;
+
+                    argList->SetInputArgumentOfShort(i, iValue);
                     break;
                 case TypeKind::Integer:
-                    if (kwargs.contains(name.string()))
-                        argList->SetInputArgumentOfInteger(i, int(py::int_(kwargs[name.string()])));
-                    else
-                        argList->SetInputArgumentOfInteger(i, int(py::int_(args[inParam++])));
+                    if (JS_ToInt32(ctx, &iValue, argv[inParam++]))
+                        iValue = -1;
+
+                    argList->SetInputArgumentOfInteger(i, iValue);
                     break;
                 case TypeKind::Long:
-                    if (kwargs.contains(name.string()))
-                        argList->SetInputArgumentOfLong(i, int(py::int_(kwargs[name.string()])));
-                    else
-                        argList->SetInputArgumentOfLong(i, int(py::int_(args[inParam++])));
+                    if (JS_ToInt64(ctx, &lValue, argv[inParam++]))
+                        lValue = -1;
+
+                    argList->SetInputArgumentOfLong(i, lValue);
                     break;
                 case TypeKind::Float:
-                    if (kwargs.contains(name.string()))
-                        argList->SetInputArgumentOfFloat(i, float(py::float_(kwargs[name.string()])));
-                    else
-                        argList->SetInputArgumentOfFloat(i, float(py::float_(args[inParam++])));
+                    if (JS_ToFloat64(ctx, &dValue, argv[inParam++]))
+                        dValue = -1;
+
+                    argList->SetInputArgumentOfFloat(i, dValue);
                     break;
                 case TypeKind::Double:
-                    if (kwargs.contains(name.string()))
-                        argList->SetInputArgumentOfDouble(i, float(py::float_(kwargs[name.string()])));
-                    else
-                        argList->SetInputArgumentOfDouble(i, float(py::float_(args[inParam++])));
+                    if (JS_ToFloat64(ctx, &dValue, argv[inParam++]))
+                        dValue = -1;
+
+                    argList->SetInputArgumentOfFloat(i, dValue);
                     break;
                 case TypeKind::Char:
-                    if (kwargs.contains(name.string()))
-                        argList->SetInputArgumentOfChar(i, int(py::int_(kwargs[name.string()])));
-                    else
-                        argList->SetInputArgumentOfChar(i, int(py::int_(args[inParam++])));
+                    if (JS_ToInt32(ctx, &iValue, argv[inParam++]))
+                        iValue = -1;
+
+                    argList->SetInputArgumentOfChar(i, (Char)iValue);
                     break;
                 case TypeKind::Boolean:
-                    if (kwargs.contains(name.string()))
-                        argList->SetInputArgumentOfBoolean(i, int(py::int_(kwargs[name.string()])));
-                    else
-                        argList->SetInputArgumentOfBoolean(i, Boolean(py::bool_(args[inParam++])));
+                    bValue = JS_ToBool(ctx, argv[inParam++]);
+
+                    argList->SetInputArgumentOfChar(i, bValue);
                     break;
                 case TypeKind::String:
-                    if (kwargs.contains(name.string()))
-                        argList->SetInputArgumentOfString(i, String(std::string(py::str(kwargs[name.string()])).c_str()));
-                    else
-                        argList->SetInputArgumentOfString(i, String(std::string(py::str(args[inParam++])).c_str()));
+                    argList->SetInputArgumentOfString(i, JS_ToCString(ctx, argv[inParam++]));
                     break;
                 case TypeKind::Interface: {
-                    ComoPyClassStub* argObj = args[inParam++].cast<ComoPyClassStub*>();
+                    if (JS_ToInt64(ctx, &lValue, argv[inParam++]))
+                        lValue = -1;
+                    ComoJsClassStub* argObj = reinterpret_cast<ComoJsClassStub *>(lValue);
                     argList->SetInputArgumentOfInterface(i, argObj->thisObject);
                     break;
                 }
@@ -332,7 +325,7 @@ py::tuple ComoPyClassStub::methodimpl(IMetaMethod *method, py::args args, py::kw
                 case TypeKind::Interface: {
                     AutoPtr<IMetaCoclass> mCoclass_;
                     String name, ns;
-                    std::map<std::string, ComoPyClassStub>::iterator iter;
+                    std::map<std::string, ComoJsClassStub>::iterator iter;
 
                     if (signatureBreak.empty()) {
                         method->GetSignature(signature);
@@ -363,7 +356,7 @@ py::tuple ComoPyClassStub::methodimpl(IMetaMethod *method, py::args args, py::kw
 
     if (isConstructor) {
         ec = (reinterpret_cast<IMetaConstructor*>(method))->CreateObject(argList, thisObject);
-        return py::make_tuple();
+        return out_JSValue;
     }
 
     if (ec == 0) {
@@ -371,7 +364,7 @@ py::tuple ComoPyClassStub::methodimpl(IMetaMethod *method, py::args args, py::kw
     }
 
     if (outArgs && (outResult != nullptr)) {
-        // collect output results into out_tuple
+        // collect output results into out_JSValue
         for (Integer i = 0; i < paramNumber; i++) {
             IMetaParameter* param = params[i];
 
@@ -386,45 +379,45 @@ py::tuple ComoPyClassStub::methodimpl(IMetaMethod *method, py::args args, py::kw
             if (attr == IOAttribute::OUT) {
                 switch (kind) {
                     case TypeKind::Byte:
-                        out_tuple = py::make_tuple(out_tuple, *(reinterpret_cast<Byte*>(outResult[i])));
+                        out_JSValue =  JS_NewInt32(ctx, *(reinterpret_cast<Byte*>(outResult[i])));
                         free(reinterpret_cast<void*>(outResult[i]));
                         break;
                     case TypeKind::Short:
-                        out_tuple = py::make_tuple(out_tuple, *(reinterpret_cast<Short*>(outResult[i])));
+                        out_JSValue = JS_NewInt32(ctx, *(reinterpret_cast<Short*>(outResult[i])));
                         free(reinterpret_cast<void*>(outResult[i]));
                         break;
                     case TypeKind::Integer:
-                        out_tuple = py::make_tuple(out_tuple, *(reinterpret_cast<int*>(outResult[i])));
+                        out_JSValue = JS_NewInt32(ctx, *(reinterpret_cast<int*>(outResult[i])));
                         free(reinterpret_cast<void*>(outResult[i]));
                         break;
                     case TypeKind::Long:
-                        out_tuple = py::make_tuple(out_tuple, *(reinterpret_cast<Long*>(outResult[i])));
+                        out_JSValue = JS_NewInt64(ctx, *(reinterpret_cast<Long*>(outResult[i])));
                         free(reinterpret_cast<void*>(outResult[i]));
                         break;
                     case TypeKind::Float:
-                        out_tuple = py::make_tuple(out_tuple, *(reinterpret_cast<Float*>(outResult[i])));
+                        out_JSValue = JS_NewFloat64(ctx, (double)*(reinterpret_cast<Float*>(outResult[i])));
                         free(reinterpret_cast<void*>(outResult[i]));
                         break;
                     case TypeKind::Double:
-                        out_tuple = py::make_tuple(out_tuple, *(reinterpret_cast<Double*>(outResult[i])));
+                        out_JSValue = JS_NewFloat64(ctx, *(reinterpret_cast<Double*>(outResult[i])));
                         free(reinterpret_cast<void*>(outResult[i]));
                         break;
                     case TypeKind::Char:
-                        out_tuple = py::make_tuple(out_tuple, *(reinterpret_cast<Char*>(outResult[i])));
+                        out_JSValue = JS_NewInt32(ctx, *(reinterpret_cast<Char*>(outResult[i])));
                         free(reinterpret_cast<void*>(outResult[i]));
                         break;
                     case TypeKind::Boolean:
-                        out_tuple = py::make_tuple(out_tuple, *(reinterpret_cast<Boolean*>(outResult[i])));
+                        out_JSValue = JS_NewBool(ctx, *(reinterpret_cast<Boolean*>(outResult[i])));
                         free(reinterpret_cast<void*>(outResult[i]));
                         break;
                     case TypeKind::String:
-                        out_tuple = py::make_tuple(out_tuple, std::string((*reinterpret_cast<String*>(outResult[i])).string()));
+                        out_JSValue = JS_NewString(ctx, (*reinterpret_cast<String*>(outResult[i])).string());
                         free(reinterpret_cast<void*>(outResult[i]));
                         break;
                     case TypeKind::Interface: {
                         AutoPtr<IMetaCoclass> mCoclass_;
                         String name, ns;
-                        std::map<std::string, ComoPyClassStub>::iterator iter;
+                        std::map<std::string, ComoJsClassStub>::iterator iter;
 
                         AutoPtr<IInterface> thisObject_ = reinterpret_cast<IInterface*>(outResult[i]);
                         IObject::Probe(thisObject_)->GetCoclass(mCoclass_);
@@ -432,12 +425,12 @@ py::tuple ComoPyClassStub::methodimpl(IMetaMethod *method, py::args args, py::kw
                         mCoclass_->GetNamespace(ns);
                         iter = g_como_classes.find((ns + "." + name).string());
                         if (iter != g_como_classes.end()) {
-                            ComoPyClassStub py_cls = iter->second;
-                            py::object py_obj = py_cls();
-                            out_tuple = py::make_tuple(out_tuple, py_obj);
+                            ComoJsClassStub py_cls = iter->second;
+                            //py::object py_obj = py_cls();
+                            //out_JSValue = py::make_tuple(out_JSValue, py_obj);
                         }
                         else {
-                            out_tuple = py::make_tuple(out_tuple, py::none());
+                            //out_JSValue = py::make_tuple(out_JSValue, py::none());
                         }
                         free(reinterpret_cast<void*>(outResult[i]));
                         break;
@@ -455,7 +448,7 @@ py::tuple ComoPyClassStub::methodimpl(IMetaMethod *method, py::args args, py::kw
         free(outResult);
     }
     else {
-        out_tuple = py::make_tuple(ec);
+        //out_JSValue = py::make_tuple(ec);
     }
 
     if (! signatureBreak.empty()) {
@@ -463,5 +456,5 @@ py::tuple ComoPyClassStub::methodimpl(IMetaMethod *method, py::args args, py::kw
         signatureBreak.shrink_to_fit();
     }
 
-    return out_tuple;
+    return out_JSValue;
 }

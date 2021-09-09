@@ -44,14 +44,14 @@ static int js_como_init(JSContext *ctx, JSModuleDef *m)
 
 void JS_AddComoModule(JSContext *ctx, const char *moduleName)
 {
-    int i = initComoModule(std::string(moduleName));
+    int i = initComoModule(ctx, std::string(moduleName));
 
     JSModuleDef *m;
     m = JS_NewCModule(ctx, module_name, js_como_init);
     if (!m)
         return NULL;
 
-    std::map<std::string, ComoPyClassStub>::iterator iter;
+    std::map<std::string, ComoJsClassStub>::iterator iter;
     iter = g_como_classes.begin();
     if (iter != g_como_classes.end()) {
         JS_AddModuleExport(ctx, m, iter->first);
@@ -64,25 +64,25 @@ void JS_AddComoModule(JSContext *ctx, const char *moduleName)
 
 static py::module_ *this_pymodule = nullptr;
 static MetaComponent *metaComponent = nullptr;
-std::map<std::string, ComoPyClassStub> g_como_classes;
+std::map<std::string, ComoJsClassStub> g_como_classes;
 
-static int initComoModule(const std::string &str_) {
-    metaComponent = new MetaComponent(str_);
+static int initComoModule(JSContext *ctx, const std::string &str_) {
+    metaComponent = new MetaComponent(ctx, str_);
 
     for(int i = 0;  i < metaComponent->como_classes.size();  i++) {
         MetaCoclass *metaCoclass = metaComponent->como_classes[i];
         std::string className = metaCoclass->GetName();
         std::string classNs = metaCoclass->GetNamespace();
 
-        Logger::V("como_pybind", "load class, className: %s\n", className.c_str());
-        ComoPyClassStub clz_ = ComoPyClassStub(m, className.c_str(),
+        Logger::V("como_jsbind", "load class, className: %s\n", className.c_str());
+        ComoJsClassStub clz_ = ComoJsClassStub(m, className.c_str(),
                                                                        py::module_local());
-        g_como_classes.insert(std::pair<std::string, ComoPyClassStub>(
+        g_como_classes.insert(std::pair<std::string, ComoJsClassStub>(
                                                             classNs + "." + className, clz_));
 
         switch (i) {
 
-#define LAMBDA_FOR_CLASS_INIT(_NO_)                                                                     \
+#define LAMBDA_FOR_CLASS_INIT(_NO_)                                                             \
             case _NO_:                                                                          \
                 clz_.def(py::init([](py::args args, py::kwargs kwargs) {                        \
                     MetaCoclass *metacc = metaComponent->como_classes[_NO_];                    \
@@ -92,10 +92,10 @@ static int initComoModule(const std::string &str_) {
                             std::string className = std::string(metacc->GetName());             \
                             throw std::runtime_error("initialize COMO class: " + className);    \
                         }                                                                       \
-                        ComoPyClassStub* stub = new ComoPyClassStub(metacc, thisObject);        \
+                        ComoJsClassStub* stub = new ComoJsClassStub(ctx, metacc, thisObject);   \
                         return stub;                                                            \
                     } else {                                                                    \
-                        ComoPyClassStub* stub = new ComoPyClassStub(metacc);                    \
+                        ComoJsClassStub* stub = new ComoJsClassStub(ctx, metacc);               \
                         metacc->constructObj(stub, args, kwargs);                               \
                         if (stub->thisObject == nullptr) {                                      \
                             std::string className = std::string(metacc->GetName());             \
@@ -110,7 +110,7 @@ static int initComoModule(const std::string &str_) {
 #undef LAMBDA_FOR_CLASS_INIT
         }
 
-        clz_.def("getAllConstants", &ComoPyClassStub::GetAllConstants);
+        clz_.def("getAllConstants", &ComoJsClassStub::GetAllConstants);
 
         Array<IMetaMethod*> methods;
         char buf[MAX_METHOD_NAME_LENGTH];
@@ -121,7 +121,7 @@ static int initComoModule(const std::string &str_) {
 
 #define LAMBDA_FOR_METHOD(_NO_)                                         \
                 case _NO_:                                      \
-                    clz_.def(buf, &ComoPyClassStub::m##_NO_);   \
+                    clz_.def(buf, &ComoJsClassStub::m##_NO_);   \
                     break;
 
 #include "LAMBDA_FOR_METHOD.inc"

@@ -15,10 +15,11 @@
 //=========================================================================
 
 #include <comoapi.h>
+#include <cassert>
 #include "utils.h"
 
-std::map<std::string, py::object> constantsToMap(Array<IMetaConstant*> &constants) {
-    std::map<std::string, py::object> out;
+std::map<std::string, JSValue> constantsToMap(JSContext *ctx, Array<IMetaConstant*> &constants) {
+    std::map<std::string, JSValue> out;
 
     for (Integer i = 0; i < constants.GetLength(); i++) {
         String name, ns;
@@ -42,55 +43,55 @@ std::map<std::string, py::object> constantsToMap(Array<IMetaConstant*> &constant
             case TypeKind::Byte: {
                 Byte byte;
                 value->GetByteValue(byte);
-                out.insert({strName, py::int_(byte)});
+                out.insert({strName, JS_NewInt32(ctx, byte)});
                 break;
             }
             case TypeKind::Short: {
                 Short svalue;
                 value->GetShortValue(svalue);
-                out.insert({strName, py::int_(svalue)});
+                out.insert({strName, JS_NewInt32(ctx, svalue)});
                 break;
             }
             case TypeKind::Integer: {
                 Integer ivalue;
                 value->GetIntegerValue(ivalue);
-                out.insert({strName, py::int_(ivalue)});
+                out.insert({strName, JS_NewInt32(ctx, ivalue)});
                 break;
             }
             case TypeKind::Long: {
                 Long lvalue;
                 value->GetLongValue(lvalue);
-                out.insert({strName, py::int_(lvalue)});
+                out.insert({strName, JS_NewInt64(ctx, lvalue)});
                 break;
             }
             case TypeKind::Float: {
                 Float fvalue;
                 value->GetFloatValue(fvalue);
-                out.insert({strName, py::float_(fvalue)});
+                out.insert({strName, JS_NewFloat64(ctx, (double)fvalue)});
                 break;
             }
             case TypeKind::Double: {
                 Double dvalue;
                 value->GetDoubleValue(dvalue);
-                out.insert({strName, py::float_(dvalue)});
+                out.insert({strName, JS_NewFloat64(ctx, dvalue)});
                 break;
             }
             case TypeKind::Char: {
                 Char cvalue;
                 value->GetCharValue(cvalue);
-                out.insert({strName, py::int_(cvalue)});
+                out.insert({strName, JS_NewInt32(ctx, cvalue)});
                 break;
             }
             case TypeKind::Boolean: {
                 Boolean b;
                 value->GetBooleanValue(b);
-                out.insert({strName, py::bool_(b)});
+                out.insert({strName, JS_NewBool(ctx, b)});
                 break;
             }
             case TypeKind::String: {
                 String str;
                 value->GetStringValue(str);
-                out.insert({strName, py::str(str)});
+                out.insert({strName, JS_NewString(ctx, str)});
                 break;
             }
             case TypeKind::HANDLE:

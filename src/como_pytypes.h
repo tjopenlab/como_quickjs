@@ -17,31 +17,34 @@
 #ifndef __COMO_PYTYPES_H__
 #define __COMO_PYTYPES_H__
 
+#include <map>
 #include <comoapi.h>
+#include "quickjs.h"
 
 class MetaCoclass;
 
-class ComoPyClassStub {
+class ComoJsClassStub {
 public:
-    ComoPyClassStub(MetaCoclass *mCoclass);
-    ComoPyClassStub(MetaCoclass *mCoclass, AutoPtr<IInterface> thisObject_);
+    ComoJsClassStub(JSContext *ctx_, MetaCoclass *mCoclass);
+    ComoJsClassStub(JSContext *ctx_, MetaCoclass *mCoclass, AutoPtr<IInterface> thisObject_);
 
 #define LAMBDA_FOR_METHOD(_NO_)                                 \
-    py::tuple m##_NO_(py::args args, py::kwargs kwargs) {       \
-        return methodimpl(methods[_NO_], args, kwargs, false);  \
+    JSValue m##_NO_(int argc, JSValueConst *argv) {       \
+        return methodimpl(methods[_NO_], argc, argv, false);  \
     }
 
 #include "LAMBDA_FOR_METHOD.inc"
 #undef LAMBDA_FOR_METHOD
 
-    std::map<std::string, py::object> GetAllConstants();
-    py::tuple methodimpl(IMetaMethod *method, py::args args, py::kwargs kwargs, bool isConstructor);
+    std::map<std::string, JSValue> GetAllConstants();
+    JSValue methodimpl(IMetaMethod *method, int argc, JSValueConst *argv, bool isConstructor);
     void refreshThisObject(AutoPtr<IMetaCoclass> mCoclass);
 
     AutoPtr<IInterface> thisObject;
     std::string className;
 
 private:
+    JSContext *ctx;
     Array<IMetaMethod*> methods;
 };
 

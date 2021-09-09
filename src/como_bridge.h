@@ -17,6 +17,7 @@
 #ifndef __COMO_BRIDGE_H__
 #define __COMO_BRIDGE_H__
 
+#include <vector>
 #include <comoapi.h>
 #include "como_pytypes.h"
 
@@ -26,7 +27,7 @@ class MetaValue;
 class MetaCoclass;
 
 #define MAX_METHOD_NAME_LENGTH 1024
-extern std::map<std::string, ComoPyClassStub> g_como_classes;
+extern std::map<std::string, ComoJsClassStub> g_como_classes;
 
 // MetaComponent
 ///////////////////////////////
@@ -37,7 +38,9 @@ extern std::map<std::string, ComoPyClassStub> g_como_classes;
 
 class MetaComponent {
 public:
-    MetaComponent(const std::string &componentPath_) : componentPath(componentPath_) {
+    MetaComponent(JSContext *ctx_, const std::string &componentPath_)
+                : ctx(ctx_)
+                , componentPath(componentPath_) {
         String path(componentPath.c_str());
         CoGetComponentMetadataWithPath(path, nullptr, componentHandle);
         GetAllCoclasses();
@@ -45,11 +48,12 @@ public:
 
     std::string GetName();
     std::string GetComponentID();
-    std::map<std::string, py::object> GetAllConstants();
+    std::map<std::string, JSValue> GetAllConstants();
 
     std::string componentPath;
     std::vector<MetaCoclass*> como_classes;
 private:
+    JSContext *ctx;
     void GetAllCoclasses();
     AutoPtr<IMetaComponent> componentHandle;
 };
@@ -60,7 +64,9 @@ private:
 ///////////////////////////////
 class MetaCoclass {
 public:
-    MetaCoclass(AutoPtr<IMetaCoclass> metaCoclass_) : metaCoclass(metaCoclass_) {
+    MetaCoclass(JSContext *ctx_, AutoPtr<IMetaCoclass> metaCoclass_)
+            : ctx(ctx_)
+            , metaCoclass(metaCoclass_) {
         metaCoclass_->GetMethodNumber(methodNumber);
         Array<IMetaMethod*> methods_(methodNumber);
         ECode ec = metaCoclass_->GetAllMethods(methods_);
@@ -98,7 +104,7 @@ public:
     std::string GetNamespace();
     void GetMethodName(int idxMethod, char *buf);
     AutoPtr<IInterface> CreateObject();
-    void constructObj(ComoPyClassStub* stub, py::args args, py::kwargs kwargs);
+    void constructObj(ComoJsClassStub* stub, int argc, JSValueConst *argv);
 
     Integer methodNumber;
     Integer constrsNumber;
@@ -106,6 +112,7 @@ public:
     Array<IMetaMethod*> methods;
 
 private:
+    JSContext *ctx;
     Array<IMetaConstructor*> constrs;
     Array<Boolean> overridesInfo;
 };

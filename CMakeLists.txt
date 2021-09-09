@@ -40,8 +40,8 @@ include_directories(
 )
 
 add_library(${PROJECT_NAME}
-#    ${quickjs_sources_root}/src/como_bridge.cpp
-#    ${quickjs_sources_root}/src/utils.cpp
+    ${quickjs_sources_root}/src/como_bridge.cpp
+    ${quickjs_sources_root}/src/utils.cpp
     ${LIB_comort}
     ${quickjs_sources}
 )

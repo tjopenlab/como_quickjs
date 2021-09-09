@@ -17,7 +17,11 @@
 #ifndef __UTILS_H__
 #define __UTILS_H__
 
-std::map<std::string, py::object> constantsToMap(Array<IMetaConstant*> &constants);
+#include <map>
+#include <vector>
+#include "quickjs.h"
+
+std::map<std::string, JSValue> constantsToMap(JSContext *ctx, Array<IMetaConstant*> &constants);
 
 void breakSignature(String &signature, std::vector<std::string> &signatureVector);
 
