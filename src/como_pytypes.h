@@ -28,14 +28,6 @@ public:
     ComoJsClassStub(JSContext *ctx_, MetaCoclass *mCoclass);
     ComoJsClassStub(JSContext *ctx_, MetaCoclass *mCoclass, AutoPtr<IInterface> thisObject_);
 
-#define LAMBDA_FOR_METHOD(_NO_)                                 \
-    JSValue m##_NO_(int argc, JSValueConst *argv) {       \
-        return methodimpl(methods[_NO_], argc, argv, false);  \
-    }
-
-#include "LAMBDA_FOR_METHOD.inc"
-#undef LAMBDA_FOR_METHOD
-
     std::map<std::string, JSValue> GetAllConstants();
     JSValue methodimpl(IMetaMethod *method, int argc, JSValueConst *argv, bool isConstructor);
     void refreshThisObject(AutoPtr<IMetaCoclass> mCoclass);
