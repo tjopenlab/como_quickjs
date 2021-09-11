@@ -171,7 +171,7 @@ static JSCFunctionListEntry *genComoProtoFuncs(MetaCoclass *metaCoclass)
     JSCFunctionListEntry *jscfle;
     char buf[MAX_METHOD_NAME_LENGTH];
     for (int i = 0;  i < metaCoclass->methodNumber; i++) {
-        metaCoclass->GetMethodName(j, buf);
+        metaCoclass->GetMethodName(i, buf);
         Logger::V("como_quickjs", "load method, methodName: %s\n", buf);
         jscfle = &js_como_proto_funcs[i];
         jscfle->name = strdup(buf);
