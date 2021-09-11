@@ -23,10 +23,10 @@
 
 class MetaCoclass;
 
-class ComoJsClassStub {
+class ComoJsObjectStub {
 public:
-    ComoJsClassStub(JSContext *ctx_, MetaCoclass *mCoclass);
-    ComoJsClassStub(JSContext *ctx_, MetaCoclass *mCoclass, AutoPtr<IInterface> thisObject_);
+    ComoJsObjectStub(JSContext *ctx_, MetaCoclass *mCoclass);
+    ComoJsObjectStub(JSContext *ctx_, MetaCoclass *mCoclass, AutoPtr<IInterface> thisObject_);
 
     std::map<std::string, JSValue> GetAllConstants();
     JSValue methodimpl(IMetaMethod *method, int argc, JSValueConst *argv, bool isConstructor);

@@ -27,7 +27,7 @@ class MetaValue;
 class MetaCoclass;
 
 #define MAX_METHOD_NAME_LENGTH 1024
-extern std::map<std::string, ComoJsClassStub> g_como_classes;
+extern std::map<std::string, ComoJsObjectStub> g_como_classes;
 
 // MetaComponent
 ///////////////////////////////
@@ -104,7 +104,7 @@ public:
     std::string GetNamespace();
     void GetMethodName(int idxMethod, char *buf);
     AutoPtr<IInterface> CreateObject();
-    void constructObj(ComoJsClassStub* stub, int argc, JSValueConst *argv);
+    void constructObj(ComoJsObjectStub* stub, int argc, JSValueConst *argv);
 
     Integer methodNumber;
     Integer constrsNumber;

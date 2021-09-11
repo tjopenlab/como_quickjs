@@ -104,7 +104,7 @@ AutoPtr<IInterface> MetaCoclass::CreateObject() {
     return object;
 }
 
-void MetaCoclass::constructObj(ComoJsClassStub* stub, int argc, JSValueConst *argv)
+void MetaCoclass::constructObj(ComoJsObjectStub* stub, int argc, JSValueConst *argv)
 {
     const char *signature = JS_ToCString(ctx, argv[0]);
     AutoPtr<IMetaConstructor> constr;
@@ -121,22 +121,22 @@ void MetaCoclass::constructObj(ComoJsClassStub* stub, int argc, JSValueConst *ar
     stub->methodimpl(constr, argc, argv, true);
 }
 
-// ComoJsClassStub
+// ComoJsObjectStub
 ///////////////////////////////
-ComoJsClassStub::ComoJsClassStub(JSContext *ctx_, MetaCoclass *mCoclass)
+ComoJsObjectStub::ComoJsObjectStub(JSContext *ctx_, MetaCoclass *mCoclass)
     : ctx(ctx_)
     , thisObject(nullptr),
     methods(mCoclass->methods)
 {}
 
-ComoJsClassStub::ComoJsClassStub(JSContext *ctx_, MetaCoclass *mCoclass, AutoPtr<IInterface> thisObject_)
+ComoJsObjectStub::ComoJsObjectStub(JSContext *ctx_, MetaCoclass *mCoclass, AutoPtr<IInterface> thisObject_)
     : ctx(ctx_)
     , thisObject(thisObject_),
     methods(mCoclass->methods)
 {}
 
 
-std::map<std::string, JSValue> ComoJsClassStub::GetAllConstants() {
+std::map<std::string, JSValue> ComoJsObjectStub::GetAllConstants() {
     std::map<std::string, JSValue> out;
 
     AutoPtr<IMetaCoclass> metaCoclass;
@@ -162,7 +162,7 @@ std::map<std::string, JSValue> ComoJsClassStub::GetAllConstants() {
     return out;
 }
 
-JSValue ComoJsClassStub::methodimpl(IMetaMethod *method, int argc, JSValueConst *argv, bool isConstructor) {
+JSValue ComoJsObjectStub::methodimpl(IMetaMethod *method, int argc, JSValueConst *argv, bool isConstructor) {
     ECode ec = 0;
     AutoPtr<IArgumentList> argList;
     Boolean outArgs;
@@ -271,7 +271,7 @@ JSValue ComoJsClassStub::methodimpl(IMetaMethod *method, int argc, JSValueConst 
                 case TypeKind::Interface: {
                     if (JS_ToInt64(ctx, &lValue, argv[inParam++]))
                         lValue = -1;
-                    ComoJsClassStub* argObj = reinterpret_cast<ComoJsClassStub *>(lValue);
+                    ComoJsObjectStub* argObj = reinterpret_cast<ComoJsObjectStub *>(lValue);
                     argList->SetInputArgumentOfInterface(i, argObj->thisObject);
                     break;
                 }
@@ -325,7 +325,7 @@ JSValue ComoJsClassStub::methodimpl(IMetaMethod *method, int argc, JSValueConst 
                 case TypeKind::Interface: {
                     AutoPtr<IMetaCoclass> mCoclass_;
                     String name, ns;
-                    std::map<std::string, ComoJsClassStub>::iterator iter;
+                    std::map<std::string, ComoJsObjectStub>::iterator iter;
 
                     if (signatureBreak.empty()) {
                         method->GetSignature(signature);
@@ -417,7 +417,7 @@ JSValue ComoJsClassStub::methodimpl(IMetaMethod *method, int argc, JSValueConst 
                     case TypeKind::Interface: {
                         AutoPtr<IMetaCoclass> mCoclass_;
                         String name, ns;
-                        std::map<std::string, ComoJsClassStub>::iterator iter;
+                        std::map<std::string, ComoJsObjectStub>::iterator iter;
 
                         AutoPtr<IInterface> thisObject_ = reinterpret_cast<IInterface*>(outResult[i]);
                         IObject::Probe(thisObject_)->GetCoclass(mCoclass_);
@@ -425,7 +425,7 @@ JSValue ComoJsClassStub::methodimpl(IMetaMethod *method, int argc, JSValueConst 
                         mCoclass_->GetNamespace(ns);
                         iter = g_como_classes.find((ns + "." + name).string());
                         if (iter != g_como_classes.end()) {
-                            ComoJsClassStub py_cls = iter->second;
+                            ComoJsObjectStub py_cls = iter->second;
                             //py::object py_obj = py_cls();
                             //out_JSValue = py::make_tuple(out_JSValue, py_obj);
                         }
