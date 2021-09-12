@@ -317,7 +317,9 @@ struct JSClass {
     /* pointers for exotic behavior, can be NULL if none are present */
     const JSClassExoticMethods *exotic;
 
-    // added by COMO to sync class information with COMO
+    /* COMO
+     * added by COMO to sync class information with COMO
+     */
     void *como_class;
 };
 
@@ -54037,3 +54039,16 @@ void JS_AddIntrinsicTypedArrays(JSContext *ctx)
     JS_AddIntrinsicAtomics(ctx);
 #endif
 }
+
+/* COMO
+ * for JSObject is defined in quickjs.c, this function has to be put in quickjs.c
+ */
+void *JS_GetRawOpaque(JSValueConst obj)
+{
+    JSObject *p;
+    if (JS_VALUE_GET_TAG(obj) != JS_TAG_OBJECT)
+        return NULL;
+    p = JS_VALUE_GET_OBJ(obj);
+    return p->u.opaque;
+}
+

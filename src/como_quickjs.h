@@ -21,4 +21,9 @@
 
 void JS_AddComoModule(JSContext *ctx, const char *moduleName);
 
+/* COMO
+ * for JSObject is defined in quickjs.c, this function has to be put in quickjs.c
+ */
+void *JS_GetRawOpaque(JSValueConst obj);
+
 #endif //__COMO_QUICKJS_H__

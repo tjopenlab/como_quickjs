@@ -22,14 +22,6 @@ using namespace como;
 
 static JSCFunctionListEntry genComoProtoFuncs(MetaCoclass *metaCoclass);
 
-static void *JS_GetRawOpaque(JSValueConst obj)
-{
-    JSObject *p;
-    if (JS_VALUE_GET_TAG(obj) != JS_TAG_OBJECT)
-        return NULL;
-    return p->u.opaque;
-}
-
 static void JS_SetClassComoClass(JSContext *ctx, JSClassID class_id,
                                  MetaCoclass *metacc)
 {
