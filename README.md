@@ -4,9 +4,11 @@
 como_quickjs是COMO QuickJS 绑定库。
 
 QuickJS 是在 MIT 许可下发的一个轻量 js 引擎包含 js 的编译器和解释器，支持最新 TC39 的
-ECMA-262 标准。QuickJS通过反射机制调用COMO构件，不需要COMO做任何改变，写出的构件就可以
-在Javascript中使用。只要是用COMO规范开发的C++程序，就可以象Javascript自己写的程序模块
-module一样，但效率高得多。
+ECMA-262 标准。QuickJS的作者 Fabrice Bellard 是一个传奇人物，速度最快的TCC，还有功能
+强大，使用最广的视频处理库 FFmpeg 和 Android 模拟器 QEMU 都是出自他手。
+QuickJS通过反射机制调用 COMO 构件，不需要 COMO 做任何改变，写出的构件就可以
+在 Javascript 中使用。只要是用COMO规范开发的C++程序，就可以象 Javascript 自己写的程序
+模块 module 一样，但效率高得多。
 
 #### 安装教程
 
