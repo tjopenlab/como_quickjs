@@ -46,6 +46,15 @@ public:
         GetAllCoclasses();
     }
 
+    MetaComponent(JSContext *ctx_, const std::string &componentPath_,
+                                   AutoPtr<IMetaComponent> componentHandle_)
+                : ctx(ctx_)
+                , componentHandle(componentHandle_)
+                , componentPath(componentPath_) {
+        String path(componentPath.c_str());
+        GetAllCoclasses();
+    }
+
     std::string GetName();
     std::string GetComponentID();
     std::map<std::string, JSValue> GetAllConstants();

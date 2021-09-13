@@ -493,6 +493,16 @@ static JSModuleDef *js_module_loader_so(JSContext *ctx,
 
     init = dlsym(hd, "js_init_module");
     if (!init) {
+
+        /* COMO
+         * check whether it is a COMO module
+         */
+        void JS_SetJSModuleDefHdComo(JSModuleDef *m, void *hd);
+        if (dlsym(hd, "soGetComoVersion") != NULL) {
+            JS_SetJSModuleDefHdComo(m, hd);
+            return m;
+        }
+
         JS_ThrowReferenceError(ctx, "could not load module filename '%s': js_init_module not found",
                                module_name);
         goto fail;

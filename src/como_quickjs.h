@@ -22,7 +22,7 @@
 void JS_AddComoModule(JSContext *ctx, const char *moduleName);
 
 /* COMO
- * for JSObject, JSContext are defined in quickjs.c, these functions have to be
+ * for JSObject(, JSContext) are defined in quickjs.c, these functions have to be
  * put in quickjs.c
  */
 void *JS_GetRawOpaque(JSValueConst obj);
@@ -30,6 +30,8 @@ void JS_SetClassComoClass(JSContext *ctx, JSClassID class_id, void *metacc);
 void *JS_GetClassComoClass(JSContext *ctx, JSClassID class_id);
 JSClassID JS_GetJSObjectClassID(JSObject *obj);
 const char *JS_GetModuleNameCString(JSContext *ctx, JSModuleDef *m);
+void JS_SetJSModuleDefHdComo(JSModuleDef *m, void *hd);
+void *JS_GetJSModuleDefHdComo(JSModuleDef *m);
 /* COMO
  */
 

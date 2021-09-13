@@ -21,12 +21,15 @@
 using namespace como;
 
 static JSCFunctionListEntry *genComoProtoFuncs(MetaCoclass *metaCoclass);
+static ECode JS_LoadComoComponent(void *hd, AutoPtr<IMetaComponent>& mc);
 
 static void js_como_finalizer(JSRuntime *rt, JSValue val)
 {
     ComoJsObjectStub *stub = (ComoJsObjectStub *)JS_GetRawOpaque(val);
     // Note: 'stub' can be NULL in case JS_SetOpaque() was not called
-    // delete COMO object
+    if (stub != nullptr) {
+        delete stub;
+    }
 }
 
 static JSValue js_como_ctor(JSContext *ctx, JSValueConst new_target,
@@ -96,9 +99,16 @@ static int js_como_init(JSContext *ctx, JSModuleDef *m)
     JSCFunctionListEntry *js_como_proto_funcs;
 
     JSValue como_proto, como_class;
-    const char *str_moduleName = JS_GetModuleNameCString(ctx, m);
 
-    MetaComponent *metaComponent = new MetaComponent(ctx, str_moduleName);
+    const char *str_moduleName = JS_GetModuleNameCString(ctx, m);
+    MetaComponent *metaComponent;
+    if (JS_GetJSModuleDefHdComo(m)) {
+        AutoPtr<IMetaComponent> mc;
+        JS_LoadComoComponent(JS_GetJSModuleDefHdComo(m), mc);
+        metaComponent = new MetaComponent(ctx, str_moduleName, mc);
+    } else {
+        metaComponent = new MetaComponent(ctx, str_moduleName);
+    }
 
     for(int i = 0;  i < metaComponent->como_classes.size();  i++) {
         MetaCoclass *metaCoclass = metaComponent->como_classes[i];
@@ -124,7 +134,7 @@ static int js_como_init(JSContext *ctx, JSModuleDef *m)
         JS_SetClassComoClass(ctx, js_como_class_id, metaCoclass);
 
         // store metaCoclass in property
-        JSValue como_proto = JS_MKPTR(JS_TAG_SYMBOL, metaCoclass);
+        como_proto = JS_MKPTR(JS_TAG_SYMBOL, metaCoclass);
         JS_SetClassProto(ctx, js_como_class_id, como_proto);
 
         JS_SetModuleExport(ctx, m, className.c_str(), como_class);
@@ -151,6 +161,8 @@ static JSCFunctionListEntry *genComoProtoFuncs(MetaCoclass *metaCoclass)
 {
     JSCFunctionListEntry *js_como_proto_funcs;
     js_como_proto_funcs = (JSCFunctionListEntry *)calloc(metaCoclass->methodNumber, sizeof(JSCFunctionListEntry));
+    if (js_como_proto_funcs == nullptr)
+        return nullptr;
 
     JSCFunctionListEntry *jscfle;
     char buf[MAX_METHOD_NAME_LENGTH];
@@ -158,7 +170,7 @@ static JSCFunctionListEntry *genComoProtoFuncs(MetaCoclass *metaCoclass)
         metaCoclass->GetMethodName(i, buf);
         Logger::V("como_quickjs", "load method, methodName: %s\n", buf);
         jscfle = &js_como_proto_funcs[i];
-        jscfle->name = strdup(buf);
+        jscfle->name = strdup(buf);         // TODO, when to free it?
         jscfle->prop_flags = JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE;
         jscfle->def_type = JS_DEF_CFUNC;
         jscfle->magic = i;
@@ -168,4 +180,10 @@ static JSCFunctionListEntry *genComoProtoFuncs(MetaCoclass *metaCoclass)
     }
 
     return js_como_proto_funcs;
+}
+
+static ECode JS_LoadComoComponent(void *hd, AutoPtr<IMetaComponent>& mc)
+{
+    ECode ec = CoGetComponentMetadataFromFile(reinterpret_cast<HANDLE>(hd), nullptr, mc);
+    return ec;
 }

@@ -809,6 +809,11 @@ struct JSModuleDef {
     BOOL eval_has_exception : 8;
     JSValue eval_exception;
     JSValue meta_obj; /* for import.meta */
+
+    /* COMO
+     * added by COMO to store COMO component handle
+     */
+    void *hdComo;
 };
 
 typedef struct JSJobEntry {
@@ -54075,6 +54080,16 @@ JSClassID JS_GetJSObjectClassID(JSObject *obj)
 const char *JS_GetModuleNameCString(JSContext *ctx, JSModuleDef *m)
 {
     return JS_AtomToCString(ctx, JS_GetModuleName(ctx, m));
+}
+
+void JS_SetJSModuleDefHdComo(JSModuleDef *m, void *hd)
+{
+    m->hdComo = hd;
+}
+
+void *JS_GetJSModuleDefHdComo(JSModuleDef *m)
+{
+    return m->hdComo;
 }
 
 /* COMO
