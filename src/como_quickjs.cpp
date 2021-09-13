@@ -90,14 +90,10 @@ static JSValue js_como_method(JSContext *ctx, JSValueConst this_val,
 static int js_como_init(JSContext *ctx, JSModuleDef *m)
 {
     JSClassDef js_como_class = {
-        "Como",
         .finalizer = js_como_finalizer,
     };
 
-    JSClassID js_como_class_id;
-
     JSCFunctionListEntry *js_como_proto_funcs;
-
     JSValue como_proto, como_class;
 
     const char *str_moduleName = JS_GetModuleNameCString(ctx, m);
@@ -110,15 +106,18 @@ static int js_como_init(JSContext *ctx, JSModuleDef *m)
         metaComponent = new MetaComponent(ctx, str_moduleName);
     }
 
+    JSClassID js_como_class_id;
     for(int i = 0;  i < metaComponent->como_classes.size();  i++) {
         MetaCoclass *metaCoclass = metaComponent->como_classes[i];
         std::string className = metaCoclass->GetName();
         std::string classNs = metaCoclass->GetNamespace();
+        const char *szClassName = className.c_str();
 
-        Logger::V("como_quickjs", "load class, className: %s\n", className.c_str());
+        Logger::V("como_quickjs", "load class, className: %s\n", szClassName);
 
-        // create the Point class
+        js_como_class_id = 0;
         JS_NewClassID(&js_como_class_id);
+        js_como_class.class_name = szClassName;
         JS_NewClass(JS_GetRuntime(ctx), js_como_class_id, &js_como_class);
 
         js_como_proto_funcs = genComoProtoFuncs(metaCoclass);
@@ -126,7 +125,7 @@ static int js_como_init(JSContext *ctx, JSModuleDef *m)
         como_proto = JS_NewObject(ctx);
         JS_SetPropertyFunctionList(ctx, como_proto, js_como_proto_funcs, metaCoclass->methodNumber);
 
-        como_class = JS_NewCFunction2(ctx, js_como_ctor, className.c_str(), 2, JS_CFUNC_constructor, 0);
+        como_class = JS_NewCFunction2(ctx, js_como_ctor, szClassName, 2, JS_CFUNC_constructor, 0);
 
         // set proto.constructor and ctor.prototype
         JS_SetConstructor(ctx, como_class, como_proto);
@@ -137,7 +136,7 @@ static int js_como_init(JSContext *ctx, JSModuleDef *m)
         como_proto = JS_MKPTR(JS_TAG_SYMBOL, metaCoclass);
         JS_SetClassProto(ctx, js_como_class_id, como_proto);
 
-        JS_SetModuleExport(ctx, m, className.c_str(), como_class);
+        JS_SetModuleExport(ctx, m, szClassName, como_class);
     }
 
     return 0;
