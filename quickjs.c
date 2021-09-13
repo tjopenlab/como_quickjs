@@ -54041,7 +54041,8 @@ void JS_AddIntrinsicTypedArrays(JSContext *ctx)
 }
 
 /* COMO
- * for JSObject is defined in quickjs.c, this function has to be put in quickjs.c
+ * for JSObject(, JSContext) are defined in quickjs.c, these functions have to be
+ * put in quickjs.c
  */
 void *JS_GetRawOpaque(JSValueConst obj)
 {
@@ -54052,3 +54053,29 @@ void *JS_GetRawOpaque(JSValueConst obj)
     return p->u.opaque;
 }
 
+void JS_SetClassComoClass(JSContext *ctx, JSClassID class_id, void *metacc)
+{
+    JSRuntime *rt = ctx->rt;
+    assert(class_id < rt->class_count);
+    rt->class_array[class_id].como_class = (void *)metacc;
+}
+
+void *JS_GetClassComoClass(JSContext *ctx, JSClassID class_id)
+{
+    JSRuntime *rt = ctx->rt;
+    assert(class_id < rt->class_count);
+    return (void *)rt->class_array[class_id].como_class;
+}
+
+JSClassID JS_GetJSObjectClassID(JSObject *obj)
+{
+    return obj->class_id;
+}
+
+const char *JS_GetModuleNameCString(JSContext *ctx, JSModuleDef *m)
+{
+    return JS_AtomToCString(ctx, JS_GetModuleName(ctx, m));
+}
+
+/* COMO
+ */

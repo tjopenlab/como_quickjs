@@ -34,10 +34,10 @@ public:
 
     AutoPtr<IInterface> thisObject;
     std::string className;
+    Array<IMetaMethod*> methods;
 
 private:
     JSContext *ctx;
-    Array<IMetaMethod*> methods;
 };
 
 #endif

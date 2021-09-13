@@ -20,19 +20,11 @@
 
 using namespace como;
 
-static JSCFunctionListEntry genComoProtoFuncs(MetaCoclass *metaCoclass);
-
-static void JS_SetClassComoClass(JSContext *ctx, JSClassID class_id,
-                                 MetaCoclass *metacc)
-{
-    JSRuntime *rt = ctx->rt;
-    assert(class_id < rt->class_count);
-    ctx->rt->class_array[class_id]->como_class = (void *)metacc;
-}
+static JSCFunctionListEntry *genComoProtoFuncs(MetaCoclass *metaCoclass);
 
 static void js_como_finalizer(JSRuntime *rt, JSValue val)
 {
-    ComoJsObjectStub* stub = JS_GetRawOpaque(val);
+    ComoJsObjectStub *stub = (ComoJsObjectStub *)JS_GetRawOpaque(val);
     // Note: 'stub' can be NULL in case JS_SetOpaque() was not called
     // delete COMO object
 }
@@ -46,10 +38,9 @@ static JSValue js_como_ctor(JSContext *ctx, JSValueConst new_target,
     JSObject *p;
     p = JS_VALUE_GET_OBJ(new_target);
 
-    JSClass *class_;
-    class_ = ctx->rt->class_array[p->class_id];
-    MetaCoclass *metacc = class_->como_class;
+    JSClassID class_id = JS_GetJSObjectClassID(p);
 
+    MetaCoclass *metacc = (MetaCoclass *)JS_GetClassComoClass(ctx, class_id);
     ComoJsObjectStub* stub = new ComoJsObjectStub(ctx, metacc);
 
     if (argc == 0) {
@@ -57,9 +48,11 @@ static JSValue js_como_ctor(JSContext *ctx, JSValueConst new_target,
         if (thisObject == nullptr)
             goto fail;
         ComoJsObjectStub* stub = new ComoJsObjectStub(ctx, metacc, thisObject);
+        if (stub == nullptr)
+            goto fail;
     } else {
         ComoJsObjectStub* stub = new ComoJsObjectStub(ctx, metacc);
-        if (thisObject == nullptr)
+        if (stub == nullptr)
             goto fail;
         metacc->constructObj(stub, argc, argv);
     }
@@ -69,7 +62,7 @@ static JSValue js_como_ctor(JSContext *ctx, JSValueConst new_target,
     proto = JS_GetPropertyStr(ctx, new_target, "prototype");
     if (JS_IsException(proto))
         goto fail;
-    obj = JS_NewObjectProtoClass(ctx, proto, p->class_id);
+    obj = JS_NewObjectProtoClass(ctx, proto, class_id);
     JS_FreeValue(ctx, proto);
     if (JS_IsException(obj))
         goto fail;
@@ -84,10 +77,10 @@ static JSValue js_como_method(JSContext *ctx, JSValueConst this_val,
                               int argc, JSValueConst *argv,
                               int magic)
 {
-    ComoJsObjectStub* stub = JS_GetRawOpaque(this_val);
+    ComoJsObjectStub *stub = (ComoJsObjectStub *)JS_GetRawOpaque(this_val);
     if (!stub)
         return JS_EXCEPTION;
-    return stub->methodimpl(methods[magic], argc, argv, false);
+    return stub->methodimpl(stub->methods[magic], argc, argv, false);
 }
 
 
@@ -102,10 +95,10 @@ static int js_como_init(JSContext *ctx, JSModuleDef *m)
 
     JSCFunctionListEntry *js_como_proto_funcs;
 
-    JSValue point_proto, point_class;
-    const char *str_moduleName = JS_AtomToCString(ctx, m->module_name);
+    JSValue como_proto, como_class;
+    const char *str_moduleName = JS_GetModuleNameCString(ctx, m);
 
-    metaComponent = new MetaComponent(ctx, str_moduleName);
+    MetaComponent *metaComponent = new MetaComponent(ctx, str_moduleName);
 
     for(int i = 0;  i < metaComponent->como_classes.size();  i++) {
         MetaCoclass *metaCoclass = metaComponent->como_classes[i];
@@ -120,12 +113,13 @@ static int js_como_init(JSContext *ctx, JSModuleDef *m)
 
         js_como_proto_funcs = genComoProtoFuncs(metaCoclass);
 
-        point_proto = JS_NewObject(ctx);
-        JS_SetPropertyFunctionList(ctx, point_proto, js_point_proto_funcs, countof(js_como_proto_funcs));
+        como_proto = JS_NewObject(ctx);
+        JS_SetPropertyFunctionList(ctx, como_proto, js_como_proto_funcs, metaCoclass->methodNumber);
 
-        point_class = JS_NewCFunction2(ctx, js_point_ctor, className.c_str(), 2, JS_CFUNC_constructor);
+        como_class = JS_NewCFunction2(ctx, js_como_ctor, className.c_str(), 2, JS_CFUNC_constructor, 0);
+
         // set proto.constructor and ctor.prototype
-        JS_SetConstructor(ctx, point_class, point_proto);
+        JS_SetConstructor(ctx, como_class, como_proto);
 
         JS_SetClassComoClass(ctx, js_como_class_id, metaCoclass);
 
@@ -133,7 +127,7 @@ static int js_como_init(JSContext *ctx, JSModuleDef *m)
         JSValue como_proto = JS_MKPTR(JS_TAG_SYMBOL, metaCoclass);
         JS_SetClassProto(ctx, js_como_class_id, como_proto);
 
-        JS_SetModuleExport(ctx, m, "Point", point_class);
+        JS_SetModuleExport(ctx, m, className.c_str(), como_class);
     }
 
     return 0;
@@ -142,23 +136,21 @@ static int js_como_init(JSContext *ctx, JSModuleDef *m)
 void JS_AddComoModule(JSContext *ctx, const char *moduleName)
 {
     JSModuleDef *m;
-    m = JS_NewCModule(ctx, module_name, js_como_init);
+    m = JS_NewCModule(ctx, moduleName, js_como_init);
     if (!m)
-        return NULL;
+        return;
 
     std::map<std::string, ComoJsObjectStub>::iterator iter;
     iter = g_como_classes.begin();
     if (iter != g_como_classes.end()) {
-        JS_AddModuleExport(ctx, m, iter->first);
+        JS_AddModuleExport(ctx, m, iter->first.c_str());
     }
-
-    return m;
 }
 
 static JSCFunctionListEntry *genComoProtoFuncs(MetaCoclass *metaCoclass)
 {
     JSCFunctionListEntry *js_como_proto_funcs;
-    js_como_proto_funcs = calloc(metaCoclass->methodNumber, sizeof(JSCFunctionListEntry));
+    js_como_proto_funcs = (JSCFunctionListEntry *)calloc(metaCoclass->methodNumber, sizeof(JSCFunctionListEntry));
 
     JSCFunctionListEntry *jscfle;
     char buf[MAX_METHOD_NAME_LENGTH];
@@ -175,5 +167,5 @@ static JSCFunctionListEntry *genComoProtoFuncs(MetaCoclass *metaCoclass)
         jscfle->u.func.cfunc.generic_magic = js_como_method;
     }
 
-    return JSCFunctionListEntry;
+    return js_como_proto_funcs;
 }
