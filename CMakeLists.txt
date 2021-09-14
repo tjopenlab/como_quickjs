@@ -63,7 +63,6 @@ target_link_libraries(COMO_quickjs_lib PRIVATE
 
 add_executable(qjs
     qjs.c
-    ${quickjs_sources}
 )
 
 target_link_libraries(qjs
