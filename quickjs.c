@@ -813,7 +813,7 @@ struct JSModuleDef {
     /* COMO
      * added by COMO to store COMO component handle
      */
-    void *hdComo;
+    void *metaComponent;
 };
 
 typedef struct JSJobEntry {
@@ -54082,14 +54082,14 @@ const char *JS_GetModuleNameCString(JSContext *ctx, JSModuleDef *m)
     return JS_AtomToCString(ctx, JS_GetModuleName(ctx, m));
 }
 
-void JS_SetJSModuleDefHdComo(JSModuleDef *m, void *hd)
+void JS_SetJSModuleDefMetaComponent(JSModuleDef *m, void *metaComponent)
 {
-    m->hdComo = hd;
+    m->metaComponent = metaComponent;
 }
 
-void *JS_GetJSModuleDefHdComo(JSModuleDef *m)
+void *JS_GetJSModuleDefMetaComponent(JSModuleDef *m)
 {
-    return m->hdComo;
+    return m->metaComponent;
 }
 
 /* COMO

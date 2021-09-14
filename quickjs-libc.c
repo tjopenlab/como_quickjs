@@ -495,18 +495,20 @@ static JSModuleDef *js_module_loader_so(JSContext *ctx,
     if (!init) {
 
         /* COMO
-         * check whether it is a COMO module
          */
-        void JS_SetJSModuleDefHdComo(JSModuleDef *m, void *hd);
+        int js_exportComoClasses(JSContext *ctx, JSModuleDef *m, const char *module_name, void *hd);
         int js_como_init(JSContext *ctx, JSModuleDef *m);
+
+        // check whether it is a COMO module
         if (dlsym(hd, "soGetComoVersion") != NULL) {
             m = JS_NewCModule(ctx, module_name, js_como_init);
             if (m != NULL) {
-                JS_AddModuleExport(ctx, m, module_name);
-                JS_SetJSModuleDefHdComo(m, hd);
+                js_exportComoClasses(ctx, m, module_name, hd);
                 return m;
             }
         }
+        /*
+        COMO */
 
         JS_ThrowReferenceError(ctx, "could not load module filename '%s': js_init_module not found",
                                module_name);

@@ -21,7 +21,6 @@
 using namespace como;
 
 static JSCFunctionListEntry *genComoProtoFuncs(MetaCoclass *metaCoclass);
-static ECode JS_LoadComoComponent(void *hd, AutoPtr<IMetaComponent>& mc);
 
 static void js_como_finalizer(JSRuntime *rt, JSValue val)
 {
@@ -86,6 +85,21 @@ static JSValue js_como_method(JSContext *ctx, JSValueConst this_val,
     return stub->methodimpl(stub->methods[magic], argc, argv, false);
 }
 
+extern "C" int js_exportComoClasses(JSContext *ctx, JSModuleDef *m, const char *module_name, void *hd)
+{
+    AutoPtr<IMetaComponent> mc;
+    ECode ec = CoGetComponentMetadataFromFile(reinterpret_cast<HANDLE>(hd), nullptr, mc);
+    MetaComponent *metaComponent = new MetaComponent(ctx, module_name, mc);
+    for(int i = 0;  i < metaComponent->como_classes.size();  i++) {
+        MetaCoclass *metaCoclass = metaComponent->como_classes[i];
+        std::string className = metaCoclass->GetName();
+        JS_AddModuleExport(ctx, m, className.c_str());
+    }
+
+    JS_SetJSModuleDefMetaComponent(m, metaComponent);
+
+    return 0;
+}
 
 extern "C" int js_como_init(JSContext *ctx, JSModuleDef *m)
 {
@@ -96,15 +110,10 @@ extern "C" int js_como_init(JSContext *ctx, JSModuleDef *m)
     JSCFunctionListEntry *js_como_proto_funcs;
     JSValue como_proto, como_class;
 
-    const char *str_moduleName = JS_GetModuleNameCString(ctx, m);
+    //const char *str_moduleName = JS_GetModuleNameCString(ctx, m);
     MetaComponent *metaComponent;
-    if (JS_GetJSModuleDefHdComo(m)) {
-        AutoPtr<IMetaComponent> mc;
-        JS_LoadComoComponent(JS_GetJSModuleDefHdComo(m), mc);
-        metaComponent = new MetaComponent(ctx, str_moduleName, mc);
-    } else {
-        metaComponent = new MetaComponent(ctx, str_moduleName);
-    }
+
+    metaComponent = (MetaComponent *)JS_GetJSModuleDefMetaComponent(m);
 
     JSClassID js_como_class_id;
     for(int i = 0;  i < metaComponent->como_classes.size();  i++) {
@@ -165,10 +174,4 @@ static JSCFunctionListEntry *genComoProtoFuncs(MetaCoclass *metaCoclass)
     }
 
     return js_como_proto_funcs;
-}
-
-static ECode JS_LoadComoComponent(void *hd, AutoPtr<IMetaComponent>& mc)
-{
-    ECode ec = CoGetComponentMetadataFromFile(reinterpret_cast<HANDLE>(hd), nullptr, mc);
-    return ec;
 }

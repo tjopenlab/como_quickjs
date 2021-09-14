@@ -32,8 +32,8 @@ void JS_SetClassComoClass(JSContext *ctx, JSClassID class_id, void *metacc);
 void *JS_GetClassComoClass(JSContext *ctx, JSClassID class_id);
 JSClassID JS_GetJSObjectClassID(JSObject *obj);
 const char *JS_GetModuleNameCString(JSContext *ctx, JSModuleDef *m);
-void JS_SetJSModuleDefHdComo(JSModuleDef *m, void *hd);
-void *JS_GetJSModuleDefHdComo(JSModuleDef *m);
+void JS_SetJSModuleDefMetaComponent(JSModuleDef *m, void *metaComponent);
+void *JS_GetJSModuleDefMetaComponent(JSModuleDef *m);
 /* COMO
  */
 
