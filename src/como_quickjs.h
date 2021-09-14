@@ -19,7 +19,9 @@
 
 #include "quickjs-libc.h"
 
-void JS_AddComoModule(JSContext *ctx, const char *moduleName);
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* COMO
  * for JSObject(, JSContext) are defined in quickjs.c, these functions have to be
@@ -34,5 +36,9 @@ void JS_SetJSModuleDefHdComo(JSModuleDef *m, void *hd);
 void *JS_GetJSModuleDefHdComo(JSModuleDef *m);
 /* COMO
  */
+
+#ifdef __cplusplus
+} /* extern "C" { */
+#endif
 
 #endif //__COMO_QUICKJS_H__

@@ -331,7 +331,7 @@ JSValue ComoJsObjectStub::methodimpl(IMetaMethod *method, int argc, JSValueConst
                         method->GetSignature(signature);
                         breakSignature(signature, signatureBreak);
                     }
-
+#if 0
                     iter = g_como_classes.find(signatureBreak[i]);
                     if (iter != g_como_classes.end()) {
                         outResult[i] = reinterpret_cast<HANDLE>(malloc(sizeof(IInterface*)));
@@ -340,6 +340,7 @@ JSValue ComoJsObjectStub::methodimpl(IMetaMethod *method, int argc, JSValueConst
                     else {
                         throw std::runtime_error("no COMO class: " + name);
                     }
+#endif
                     outResult[i] = reinterpret_cast<HANDLE>(malloc(sizeof(IInterface*)));
                     argList->SetOutputArgumentOfInterface(i, outResult[i]);
                     break;
@@ -423,6 +424,7 @@ JSValue ComoJsObjectStub::methodimpl(IMetaMethod *method, int argc, JSValueConst
                         IObject::Probe(thisObject_)->GetCoclass(mCoclass_);
                         mCoclass_->GetName(name);
                         mCoclass_->GetNamespace(ns);
+#if 0
                         iter = g_como_classes.find((ns + "." + name).string());
                         if (iter != g_como_classes.end()) {
                             ComoJsObjectStub py_cls = iter->second;
@@ -432,6 +434,7 @@ JSValue ComoJsObjectStub::methodimpl(IMetaMethod *method, int argc, JSValueConst
                         else {
                             //out_JSValue = py::make_tuple(out_JSValue, py::none());
                         }
+#endif
                         free(reinterpret_cast<void*>(outResult[i]));
                         break;
                     }

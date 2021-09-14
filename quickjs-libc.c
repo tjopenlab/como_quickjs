@@ -498,9 +498,14 @@ static JSModuleDef *js_module_loader_so(JSContext *ctx,
          * check whether it is a COMO module
          */
         void JS_SetJSModuleDefHdComo(JSModuleDef *m, void *hd);
+        int js_como_init(JSContext *ctx, JSModuleDef *m);
         if (dlsym(hd, "soGetComoVersion") != NULL) {
-            JS_SetJSModuleDefHdComo(m, hd);
-            return m;
+            m = JS_NewCModule(ctx, module_name, js_como_init);
+            if (m != NULL) {
+                JS_AddModuleExport(ctx, m, module_name);
+                JS_SetJSModuleDefHdComo(m, hd);
+                return m;
+            }
         }
 
         JS_ThrowReferenceError(ctx, "could not load module filename '%s': js_init_module not found",

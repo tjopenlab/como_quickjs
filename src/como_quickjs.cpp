@@ -87,7 +87,7 @@ static JSValue js_como_method(JSContext *ctx, JSValueConst this_val,
 }
 
 
-static int js_como_init(JSContext *ctx, JSModuleDef *m)
+extern "C" int js_como_init(JSContext *ctx, JSModuleDef *m)
 {
     JSClassDef js_como_class = {
         .finalizer = js_como_finalizer,
@@ -140,20 +140,6 @@ static int js_como_init(JSContext *ctx, JSModuleDef *m)
     }
 
     return 0;
-}
-
-void JS_AddComoModule(JSContext *ctx, const char *moduleName)
-{
-    JSModuleDef *m;
-    m = JS_NewCModule(ctx, moduleName, js_como_init);
-    if (!m)
-        return;
-
-    std::map<std::string, ComoJsObjectStub>::iterator iter;
-    iter = g_como_classes.begin();
-    if (iter != g_como_classes.end()) {
-        JS_AddModuleExport(ctx, m, iter->first.c_str());
-    }
 }
 
 static JSCFunctionListEntry *genComoProtoFuncs(MetaCoclass *metaCoclass)
