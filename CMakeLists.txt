@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.4...3.18)
-project(como_quickjs)
+project(COMO_quickjs_lib)
 
 set(OBJ_DIR $ENV{OUT_PATH})
 set(BIN_DIR $ENV{BIN_PATH})
@@ -39,7 +39,7 @@ include_directories(
     ${INC_DIR}
 )
 
-add_library(${PROJECT_NAME}
+add_library(COMO_quickjs_lib
     ${quickjs_sources_root}/src/como_bridge.cpp
     ${quickjs_sources_root}/src/utils.cpp
     ${quickjs_sources_root}/src/como_quickjs.cpp
@@ -52,26 +52,25 @@ add_library(${PROJECT_NAME}
 add_definitions(
         -DCONFIG_VERSION=\"${quickjs_version}\"
 )
-target_include_directories(${PROJECT_NAME}
+target_include_directories(COMO_quickjs_lib
     PUBLIC
         ${quickjs_sources_root}
 )
 
-target_link_libraries(${PROJECT_NAME} PRIVATE
+target_link_libraries(COMO_quickjs_lib PRIVATE
     ${LIB_comort}
 )
 
 add_executable(qjs
     qjs.c
     ${quickjs_sources}
-    ${CMAKE_SOURCE_DIR}/build/libcomo_quickjs.a
 )
 
 target_link_libraries(qjs
+    COMO_quickjs_lib
     pthread
     dl
     m
 )
 
-
-#add_dependencies(qjs como_quickjs)
+#add_dependencies(qjs ${PROJECT_NAME})

@@ -454,8 +454,10 @@ int main(int argc, char **argv)
         }
     }
 
+#ifdef CONFIG_BIGNUM
     if (load_jscalc)
         bignum_ext = 1;
+#endif
 
     if (trace_memory) {
         js_trace_malloc_init(&trace_data);
@@ -522,9 +524,9 @@ int main(int argc, char **argv)
             if (eval_file(ctx, filename, module))
                 goto fail;
         }
-        if (interactive) {
+        /*if (interactive) {
             js_std_eval_binary(ctx, qjsc_repl, qjsc_repl_size, 0);
-        }
+        }*/
         js_std_loop(ctx);
     }
     
