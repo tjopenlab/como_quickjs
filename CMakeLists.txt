@@ -43,17 +43,35 @@ add_library(${PROJECT_NAME}
     ${quickjs_sources_root}/src/como_bridge.cpp
     ${quickjs_sources_root}/src/utils.cpp
     ${quickjs_sources_root}/src/como_quickjs.cpp
-    ${LIB_comort}
     ${quickjs_sources}
 )
-target_compile_definitions(${PROJECT_NAME}
-    PRIVATE
-        CONFIG_VERSION="${quickjs_version}"
+#target_compile_definitions(${PROJECT_NAME}
+#    PRIVATE
+#        CONFIG_VERSION=\"${quickjs_version}\"
+#)
+add_definitions(
+        -DCONFIG_VERSION=\"${quickjs_version}\"
 )
 target_include_directories(${PROJECT_NAME}
     PUBLIC
         ${quickjs_sources_root}
 )
 
-target_link_libraries(como_quickjs PRIVATE
-    ${LIB_comort})
+target_link_libraries(${PROJECT_NAME} PRIVATE
+    ${LIB_comort}
+)
+
+add_executable(qjs
+    qjs.c
+    ${quickjs_sources}
+    ${CMAKE_SOURCE_DIR}/build/libcomo_quickjs.a
+)
+
+target_link_libraries(qjs
+    pthread
+    dl
+    m
+)
+
+
+#add_dependencies(qjs como_quickjs)
