@@ -115,6 +115,9 @@ extern "C" int js_como_init(JSContext *ctx, JSModuleDef *m)
     if (metaComponent == nullptr)
         return 0;
 
+    // temp code
+    Logger::SetLevel(Logger::VERBOSE);
+
     for(int i = 0;  i < metaComponent->como_classes.size();  i++) {
         MetaCoclass *metaCoclass = metaComponent->como_classes[i];
         std::string className = metaCoclass->GetName();
@@ -132,7 +135,9 @@ extern "C" int js_como_init(JSContext *ctx, JSModuleDef *m)
         como_proto = JS_NewObject(ctx);
         JS_SetPropertyFunctionList(ctx, como_proto, js_como_proto_funcs, metaCoclass->methodNumber);
 
-        como_class = JS_NewCFunction2(ctx, js_como_ctor, szClassName, 2, JS_CFUNC_constructor, 0);
+        // int arg_count = p->u.cfunc.length;
+        const int arg_count = 0;
+        como_class = JS_NewCFunction2(ctx, js_como_ctor, szClassName, arg_count, JS_CFUNC_constructor, 0);
 
         // set proto.constructor and ctor.prototype
         JS_SetConstructor(ctx, como_class, como_proto);

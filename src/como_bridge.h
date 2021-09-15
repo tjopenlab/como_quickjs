@@ -114,7 +114,7 @@ public:
     void GetMethodName(int idxMethod, char *buf);
     int GetMethodParameterNumber(int idxMethod);
     AutoPtr<IInterface> CreateObject();
-    void constructObj(ComoJsObjectStub* stub, int argc, JSValueConst *argv);
+    void constructObj(ComoJsObjectStub *stub, int argc, JSValueConst *argv);
 
     Integer methodNumber;
     Integer constrsNumber;
