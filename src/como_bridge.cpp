@@ -20,19 +20,22 @@
 
 // MetaComponent
 ///////////////////////////////
-std::string MetaComponent::GetName() {
+std::string MetaComponent::GetName()
+{
     String str;
     componentHandle->GetName(str);
     return std::string(str.string());
 }
 
-std::string MetaComponent::GetComponentID() {
+std::string MetaComponent::GetComponentID()
+{
     String str;
     componentHandle->GetName(str);
     return std::string(str.string());
 }
 
-std::map<std::string, JSValue> MetaComponent::GetAllConstants() {
+std::map<std::string, JSValue> MetaComponent::GetAllConstants()
+{
     Integer constantNumber;
     componentHandle->GetConstantNumber(constantNumber);
     Array<IMetaConstant*> constants(constantNumber);
@@ -41,7 +44,8 @@ std::map<std::string, JSValue> MetaComponent::GetAllConstants() {
     return constantsToMap(ctx, constants);
 }
 
-void MetaComponent::GetAllCoclasses() {
+void MetaComponent::GetAllCoclasses()
+{
     Integer number;
     componentHandle->GetCoclassNumber(number);
     Array<IMetaCoclass*> klasses(number);
@@ -55,26 +59,30 @@ void MetaComponent::GetAllCoclasses() {
 
 // MetaCoclass
 ///////////////////////////////
-std::string MetaCoclass::GetName() {
+std::string MetaCoclass::GetName()
+{
     String str;
     metaCoclass->GetName(str);
     return std::string(str.string());
 }
 
-std::string MetaCoclass::GetNamespace() {
+std::string MetaCoclass::GetNamespace()
+{
     String ns;
     metaCoclass->GetNamespace(ns);
     ns = ns.Replace("::", ".");
     return std::string(ns.string());
 }
 
-int MetaCoclass::GetMethodParameterNumber(int idxMethod) {
+int MetaCoclass::GetMethodParameterNumber(int idxMethod)
+{
     Integer number;
     methods[idxMethod]->GetParameterNumber(number);
     return number;
 }
 
-void MetaCoclass::GetMethodName(int idxMethod, char *buf) {
+void MetaCoclass::GetMethodName(int idxMethod, char *buf)
+{
     String str;
     methods[idxMethod]->GetName(str);
 
@@ -101,7 +109,8 @@ void MetaCoclass::GetMethodName(int idxMethod, char *buf) {
     strncpy(buf, str.string(), MAX_METHOD_NAME_LENGTH-1);
 }
 
-AutoPtr<IInterface> MetaCoclass::CreateObject() {
+AutoPtr<IInterface> MetaCoclass::CreateObject()
+{
     AutoPtr<IInterface> object(nullptr);
     ECode ec = metaCoclass->CreateObject(IID_IInterface, &object);
     if (FAILED(ec)) {
@@ -142,7 +151,8 @@ ComoJsObjectStub::ComoJsObjectStub(JSContext *ctx_, MetaCoclass *mCoclass, AutoP
 {}
 
 
-std::map<std::string, JSValue> ComoJsObjectStub::GetAllConstants() {
+std::map<std::string, JSValue> ComoJsObjectStub::GetAllConstants()
+{
     std::map<std::string, JSValue> out;
 
     AutoPtr<IMetaCoclass> metaCoclass;
@@ -168,7 +178,8 @@ std::map<std::string, JSValue> ComoJsObjectStub::GetAllConstants() {
     return out;
 }
 
-JSValue ComoJsObjectStub::methodimpl(IMetaMethod *method, int argc, JSValueConst *argv, bool isConstructor) {
+JSValue ComoJsObjectStub::methodimpl(IMetaMethod *method, int argc, JSValueConst *argv, bool isConstructor)
+{
     ECode ec = 0;
     AutoPtr<IArgumentList> argList;
     Boolean outArgs;
