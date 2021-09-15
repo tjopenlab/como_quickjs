@@ -90,6 +90,7 @@ extern "C" int js_exportComoClasses(JSContext *ctx, JSModuleDef *m, const char *
     AutoPtr<IMetaComponent> mc;
     ECode ec = CoGetComponentMetadataFromFile(reinterpret_cast<HANDLE>(hd), nullptr, mc);
     MetaComponent *metaComponent = new MetaComponent(ctx, module_name, mc);
+
     for(int i = 0;  i < metaComponent->como_classes.size();  i++) {
         MetaCoclass *metaCoclass = metaComponent->como_classes[i];
         std::string className = metaCoclass->GetName();
@@ -109,13 +110,11 @@ extern "C" int js_como_init(JSContext *ctx, JSModuleDef *m)
 
     JSCFunctionListEntry *js_como_proto_funcs;
     JSValue como_proto, como_class;
-
-    //const char *str_moduleName = JS_GetModuleNameCString(ctx, m);
-    MetaComponent *metaComponent;
-
-    metaComponent = (MetaComponent *)JS_GetJSModuleDefMetaComponent(m);
-
     JSClassID js_como_class_id;
+    MetaComponent *metaComponent = (MetaComponent *)JS_GetJSModuleDefMetaComponent(m);
+    if (metaComponent == nullptr)
+        return 0;
+
     for(int i = 0;  i < metaComponent->como_classes.size();  i++) {
         MetaCoclass *metaCoclass = metaComponent->como_classes[i];
         std::string className = metaCoclass->GetName();
