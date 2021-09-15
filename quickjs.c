@@ -27108,6 +27108,14 @@ static void js_free_module_def(JSContext *ctx, JSModuleDef *m)
     JS_FreeValue(ctx, m->eval_exception);
     JS_FreeValue(ctx, m->meta_obj);
     list_del(&m->link);
+
+    /* COMO
+     */
+    if (m->metaComponent != NULL) {
+        void freeMetaComponent(void *metaComponent);
+        freeMetaComponent(m->metaComponent);
+    }
+
     js_free(ctx, m);
 }
 

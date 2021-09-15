@@ -19,6 +19,8 @@
 
 #include "quickjs-libc.h"
 
+void LoggerSetLevel();
+
 #ifdef __cplusplus
 extern "C" {
 #endif

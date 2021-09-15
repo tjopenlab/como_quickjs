@@ -55,6 +55,10 @@ public:
         GetAllCoclasses();
     }
 
+    ~MetaComponent() {
+        Logger::V("como_quickjs", "delete MetaComponent object");
+    }
+
     std::string GetName();
     std::string GetComponentID();
     std::map<std::string, JSValue> GetAllConstants();
