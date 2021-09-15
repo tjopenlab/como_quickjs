@@ -129,7 +129,6 @@ extern "C" int js_como_init(JSContext *ctx, JSModuleDef *m)
         JS_NewClass(JS_GetRuntime(ctx), js_como_class_id, &js_como_class);
 
         js_como_proto_funcs = genComoProtoFuncs(metaCoclass);
-
         como_proto = JS_NewObject(ctx);
         JS_SetPropertyFunctionList(ctx, como_proto, js_como_proto_funcs, metaCoclass->methodNumber);
 
@@ -137,7 +136,6 @@ extern "C" int js_como_init(JSContext *ctx, JSModuleDef *m)
 
         // set proto.constructor and ctor.prototype
         JS_SetConstructor(ctx, como_class, como_proto);
-
         JS_SetClassComoClass(ctx, js_como_class_id, metaCoclass);
 
         // store metaCoclass in property
@@ -167,7 +165,7 @@ static JSCFunctionListEntry *genComoProtoFuncs(MetaCoclass *metaCoclass)
         jscfle->prop_flags = JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE;
         jscfle->def_type = JS_DEF_CFUNC;
         jscfle->magic = i;
-        jscfle->u.func.length = 0;
+        jscfle->u.func.length = metaCoclass->GetMethodParameterNumber(i);
         jscfle->u.func.cproto = JS_CFUNC_generic_magic;
         jscfle->u.func.cfunc.generic_magic = js_como_method;
     }

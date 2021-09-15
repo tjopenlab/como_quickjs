@@ -112,6 +112,7 @@ public:
     std::string GetName();
     std::string GetNamespace();
     void GetMethodName(int idxMethod, char *buf);
+    int GetMethodParameterNumber(int idxMethod);
     AutoPtr<IInterface> CreateObject();
     void constructObj(ComoJsObjectStub* stub, int argc, JSValueConst *argv);
 
