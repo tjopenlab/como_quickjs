@@ -5,5 +5,6 @@ import { CFoo } from "/home/xilongpei/como/como/out/target/como.linux.x64.rls/sa
 var cfoo;
 
 cfoo = new CFoo();
+cfoo.Foo(48001234);
 
 print("hello world!\n");
