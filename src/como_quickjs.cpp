@@ -20,7 +20,8 @@
 
 using namespace como;
 
-static JSCFunctionListEntry *genComoProtoFuncs(JSContext *ctx, MetaCoclass *metaCoclass);
+static JSCFunctionListEntry *genComoProtoFuncs(JSContext *ctx, MetaComponent *metaComponent,
+                                               MetaCoclass *metaCoclass);
 
 static void js_como_finalizer(JSRuntime *rt, JSValue val)
 {
@@ -133,7 +134,7 @@ extern "C" int js_como_init(JSContext *ctx, JSModuleDef *m)
         js_como_class.class_name = szClassName;
         JS_NewClass(JS_GetRuntime(ctx), class_id, &js_como_class);
 
-        js_como_proto_funcs = genComoProtoFuncs(ctx, metaCoclass);
+        js_como_proto_funcs = genComoProtoFuncs(ctx, metaComponent, metaCoclass);
         como_proto = JS_NewObject(ctx);
         JS_SetPropertyFunctionList(ctx, como_proto, js_como_proto_funcs, metaCoclass->methodNumber);
 
@@ -153,7 +154,7 @@ extern "C" int js_como_init(JSContext *ctx, JSModuleDef *m)
     return 0;
 }
 
-static JSCFunctionListEntry *genComoProtoFuncs(JSContext *ctx, MetaCoclass *metaCoclass)
+static JSCFunctionListEntry *genComoProtoFuncs(JSContext *ctx, MetaComponent *metaComponent, MetaCoclass *metaCoclass)
 {
     JSCFunctionListEntry *js_como_proto_funcs;
     js_como_proto_funcs = (JSCFunctionListEntry *)calloc(metaCoclass->methodNumber, sizeof(JSCFunctionListEntry));
@@ -167,8 +168,8 @@ static JSCFunctionListEntry *genComoProtoFuncs(JSContext *ctx, MetaCoclass *meta
         Logger::V("como_quickjs", "load method, methodName: %s\n", buf);
         jscfle = &js_como_proto_funcs[i];
 
-        //jscfle->name = strdup(buf);         // TODO, when to free it?
-        jscfle->name = JS_AtomToCString(ctx, JS_NewAtom(ctx, buf)); // TODO: Atom leaks
+        jscfle->name = strdup(buf);
+        metaComponent->vector_void_p.push_back((void*)jscfle->name);
 
         jscfle->prop_flags = JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE;
         jscfle->def_type = JS_DEF_CFUNC;
@@ -183,7 +184,13 @@ static JSCFunctionListEntry *genComoProtoFuncs(JSContext *ctx, MetaCoclass *meta
 
 extern "C" void freeMetaComponent(void *metaComponent)
 {
-    delete (MetaComponent *)metaComponent;
+    std::vector<void*> vector_void_p = ((MetaComponent*)metaComponent)->vector_void_p;
+
+
+    for (int i = 0;  i < vector_void_p.size(); i++)
+        free(vector_void_p[i]);
+
+    delete (MetaComponent*)metaComponent;
 }
 
 void LoggerSetLevel()

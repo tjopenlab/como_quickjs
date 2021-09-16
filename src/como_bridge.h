@@ -65,6 +65,7 @@ public:
 
     std::string componentPath;
     std::vector<MetaCoclass*> como_classes;
+    std::vector<void*> vector_void_p;
 private:
     JSContext *ctx;
     void GetAllCoclasses();
