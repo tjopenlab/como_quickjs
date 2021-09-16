@@ -42,21 +42,21 @@ static JSValue js_como_ctor(JSContext *ctx, JSValueConst new_target,
 
     JSClassID class_id = JS_GetJSObjectClassID(p);
 
-    MetaCoclass *metacc = (MetaCoclass *)JS_GetClassComoClass(ctx, class_id);
-    ComoJsObjectStub* stub = new ComoJsObjectStub(ctx, metacc);
+    MetaCoclass *metaCoclass = (MetaCoclass *)JS_GetClassComoClass(ctx, class_id);
+    ComoJsObjectStub* stub = new ComoJsObjectStub(ctx, metaCoclass);
 
     if (argc == 0) {
-        AutoPtr<IInterface> thisObject = metacc->CreateObject();
+        AutoPtr<IInterface> thisObject = metaCoclass->CreateObject();
         if (thisObject == nullptr)
             goto fail;
-        ComoJsObjectStub* stub = new ComoJsObjectStub(ctx, metacc, thisObject);
+        ComoJsObjectStub* stub = new ComoJsObjectStub(ctx, metaCoclass, thisObject);
         if (stub == nullptr)
             goto fail;
     } else {
-        ComoJsObjectStub* stub = new ComoJsObjectStub(ctx, metacc);
+        ComoJsObjectStub* stub = new ComoJsObjectStub(ctx, metaCoclass);
         if (stub == nullptr)
             goto fail;
-        metacc->constructObj(stub, argc, argv);
+        metaCoclass->constructObj(stub, argc, argv);
     }
 
     // using new_target to get the prototype is necessary when the
@@ -113,7 +113,7 @@ extern "C" int js_como_init(JSContext *ctx, JSModuleDef *m)
 
     JSCFunctionListEntry *js_como_proto_funcs;
     JSValue como_proto, como_class;
-    JSClassID js_como_class_id;
+    JSClassID class_id;
     MetaComponent *metaComponent = (MetaComponent *)JS_GetJSModuleDefMetaComponent(m);
     if (metaComponent == nullptr)
         return 0;
@@ -126,10 +126,10 @@ extern "C" int js_como_init(JSContext *ctx, JSModuleDef *m)
 
         Logger::V("como_quickjs", "load class, className: %s\n", szClassName);
 
-        js_como_class_id = 0;
-        JS_NewClassID(&js_como_class_id);
+        class_id = 0;
+        JS_NewClassID(&class_id);
         js_como_class.class_name = szClassName;
-        JS_NewClass(JS_GetRuntime(ctx), js_como_class_id, &js_como_class);
+        JS_NewClass(JS_GetRuntime(ctx), class_id, &js_como_class);
 
         js_como_proto_funcs = genComoProtoFuncs(ctx, metaCoclass);
         como_proto = JS_NewObject(ctx);
@@ -141,9 +141,9 @@ extern "C" int js_como_init(JSContext *ctx, JSModuleDef *m)
 
         // set proto.constructor and ctor.prototype
         JS_SetConstructor(ctx, como_class, como_proto);
-        JS_SetClassProto(ctx, js_como_class_id, como_proto);
+        JS_SetClassProto(ctx, class_id, como_proto);
 
-        JS_SetClassComoClass(ctx, js_como_class_id, metaCoclass);
+        JS_SetClassComoClass(ctx, class_id, metaCoclass);
 
         JS_SetModuleExport(ctx, m, szClassName, como_class);
     }
