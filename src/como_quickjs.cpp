@@ -32,16 +32,18 @@ static void js_como_finalizer(JSRuntime *rt, JSValue val)
 }
 
 static JSValue js_como_ctor(JSContext *ctx, JSValueConst new_target,
-                            int argc, JSValueConst *argv)
+                            int argc, JSValueConst *argv,
+                            int magic)
 {
     JSValue obj = JS_UNDEFINED;
     JSValue proto;
 
+    JSClassID class_id = magic;
+    /* this doesn't work
     JSObject *p;
     p = JS_VALUE_GET_OBJ(new_target);
-
     JSClassID class_id = JS_GetJSObjectClassID(p);
-
+    */
     MetaCoclass *metaCoclass = (MetaCoclass *)JS_GetClassComoClass(ctx, class_id);
     ComoJsObjectStub *stub;
 
@@ -137,7 +139,7 @@ extern "C" int js_como_init(JSContext *ctx, JSModuleDef *m)
 
         // int arg_count = p->u.cfunc.length;
         const int arg_count = 0;
-        como_class = JS_NewCFunction2(ctx, js_como_ctor, szClassName, arg_count, JS_CFUNC_constructor, 0);
+        como_class = JS_NewCFunctionMagic(ctx, js_como_ctor, szClassName, arg_count, JS_CFUNC_constructor_magic, class_id);
 
         // set proto.constructor and ctor.prototype
         JS_SetConstructor(ctx, como_class, como_proto);
