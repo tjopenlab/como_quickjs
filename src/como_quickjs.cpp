@@ -43,17 +43,17 @@ static JSValue js_como_ctor(JSContext *ctx, JSValueConst new_target,
     JSClassID class_id = JS_GetJSObjectClassID(p);
 
     MetaCoclass *metaCoclass = (MetaCoclass *)JS_GetClassComoClass(ctx, class_id);
-    ComoJsObjectStub* stub = new ComoJsObjectStub(ctx, metaCoclass);
+    ComoJsObjectStub *stub;
 
     if (argc == 0) {
         AutoPtr<IInterface> thisObject = metaCoclass->CreateObject();
         if (thisObject == nullptr)
             goto fail;
-        ComoJsObjectStub* stub = new ComoJsObjectStub(ctx, metaCoclass, thisObject);
+        stub = new ComoJsObjectStub(ctx, metaCoclass, thisObject);
         if (stub == nullptr)
             goto fail;
     } else {
-        ComoJsObjectStub* stub = new ComoJsObjectStub(ctx, metaCoclass);
+        stub = new ComoJsObjectStub(ctx, metaCoclass);
         if (stub == nullptr)
             goto fail;
         metaCoclass->constructObj(stub, argc, argv);
