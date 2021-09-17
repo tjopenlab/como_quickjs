@@ -363,10 +363,6 @@ JSValue ComoJsObjectStub::methodimpl(IMetaMethod *method, int argc, JSValueConst
                     argList->SetOutputArgumentOfString(i, outResult[i]);
                     break;
                 case TypeKind::Interface: {
-                    AutoPtr<IMetaCoclass> mCoclass_;
-                    String name, ns;
-                    std::map<std::string, ComoJsObjectStub>::iterator iter;
-
                     if (signatureBreak.empty()) {
                         method->GetSignature(signature);
                         breakSignature(signature, signatureBreak);
@@ -457,7 +453,6 @@ JSValue ComoJsObjectStub::methodimpl(IMetaMethod *method, int argc, JSValueConst
                     case TypeKind::Interface: {
                         AutoPtr<IMetaCoclass> mCoclass_;
                         String name, ns;
-                        std::map<std::string, ComoJsObjectStub>::iterator iter;
 
                         AutoPtr<IInterface> thisObject_ = reinterpret_cast<IInterface*>(outResult[i]);
                         IObject::Probe(thisObject_)->GetCoclass(mCoclass_);
