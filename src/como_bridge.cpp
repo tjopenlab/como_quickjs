@@ -374,7 +374,7 @@ JSValue ComoJsObjectStub::methodimpl(IMetaMethod *method, int argc, JSValueConst
                         argList->SetOutputArgumentOfInterface(i, outResult[i]);
                     }
                     else {
-                        throw std::runtime_error("no COMO class: " + name);
+                        throw std::runtime_error("no COMO class: " + signatureBreak[i]);
                     }
                     outResult[i] = reinterpret_cast<HANDLE>(malloc(sizeof(IInterface*)));
                     argList->SetOutputArgumentOfInterface(i, outResult[i]);
