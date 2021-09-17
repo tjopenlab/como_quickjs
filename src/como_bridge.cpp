@@ -16,7 +16,10 @@
 
 #include <comoapi.h>
 #include "como_bridge.h"
+#include "como_quickjs.h"
 #include "utils.h"
+
+extern "C" int JS_FindComoClass(JSContext *ctx, const char *className);
 
 // MetaComponent
 ///////////////////////////////
@@ -368,16 +371,15 @@ JSValue ComoJsObjectStub::methodimpl(IMetaMethod *method, int argc, JSValueConst
                         method->GetSignature(signature);
                         breakSignature(signature, signatureBreak);
                     }
-#if 0
-                    iter = g_como_classes.find(signatureBreak[i]);
-                    if (iter != g_como_classes.end()) {
+
+                    int class_id = JS_FindComoClass(ctx, signatureBreak[i].c_str());
+                    if (class_id >= 0) {
                         outResult[i] = reinterpret_cast<HANDLE>(malloc(sizeof(IInterface*)));
                         argList->SetOutputArgumentOfInterface(i, outResult[i]);
                     }
                     else {
                         throw std::runtime_error("no COMO class: " + name);
                     }
-#endif
                     outResult[i] = reinterpret_cast<HANDLE>(malloc(sizeof(IInterface*)));
                     argList->SetOutputArgumentOfInterface(i, outResult[i]);
                     break;
@@ -461,17 +463,12 @@ JSValue ComoJsObjectStub::methodimpl(IMetaMethod *method, int argc, JSValueConst
                         IObject::Probe(thisObject_)->GetCoclass(mCoclass_);
                         mCoclass_->GetName(name);
                         mCoclass_->GetNamespace(ns);
-#if 0
-                        iter = g_como_classes.find((ns + "." + name).string());
-                        if (iter != g_como_classes.end()) {
-                            ComoJsObjectStub py_cls = iter->second;
-                            //py::object py_obj = py_cls();
-                            //out_JSValue = py::make_tuple(out_JSValue, py_obj);
+
+                        int class_id = JS_FindComoClass(ctx, name.string());
+                        if (class_id >= 0) {
+                            out_JSValue = js_box_JSValue(ctx, class_id, thisObject_);
                         }
-                        else {
-                            //out_JSValue = py::make_tuple(out_JSValue, py::none());
-                        }
-#endif
+
                         free(reinterpret_cast<void*>(outResult[i]));
                         break;
                     }

@@ -54100,5 +54100,29 @@ void *JS_GetJSModuleDefMetaComponent(JSModuleDef *m)
     return m->metaComponent;
 }
 
+int JS_FindComoClass(JSContext *ctx, const char *className)
+{
+    int js_findComoClass(void *metaComponent_, const char *className);
+
+    JSRuntime *rt = ctx->rt;
+
+    struct list_head *el, *el1;
+    list_for_each_safe(el, el1, &ctx->loaded_modules) {
+        JSModuleDef *m = list_entry(el, JSModuleDef, link);
+        if (m->metaComponent != NULL) {
+            if (js_findComoClass(m->metaComponent, className) > 0) {
+                for(int i = 0; i < rt->class_count; i++) {
+                    JSClass *cl = &rt->class_array[i];
+                    const char *str = JS_AtomToCString(ctx, rt->class_array[i].class_name);
+                    if (strcmp(str, className) == 0)
+                        return cl->class_id;
+                }
+            }
+        }
+
+    }
+    return -1;
+}
+
 /* COMO
  */

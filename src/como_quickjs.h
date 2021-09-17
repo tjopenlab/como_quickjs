@@ -19,6 +19,7 @@
 
 #include "quickjs-libc.h"
 
+JSValue js_box_JSValue(JSContext *ctx, int class_id, AutoPtr<IInterface> thisObject);
 void LoggerSetLevel();
 
 #ifdef __cplusplus

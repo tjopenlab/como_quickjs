@@ -193,6 +193,39 @@ extern "C" void freeMetaComponent(void *metaComponent)
     delete (MetaComponent*)metaComponent;
 }
 
+extern "C" int js_findComoClass(void *metaComponent_, const char *className)
+{
+    MetaComponent *metaComponent = (MetaComponent *)metaComponent_;
+
+    for(int i = 0;  i < metaComponent->como_classes.size();  i++) {
+        MetaCoclass *metaCoclass = metaComponent->como_classes[i];
+        std::string classNameTmp = metaCoclass->GetName();
+        if (strcmp(classNameTmp.c_str(), className) == 0)
+            return i;
+    }
+
+    return -1;
+}
+
+JSValue js_box_JSValue(JSContext *ctx, int class_id, AutoPtr<IInterface> thisObject)
+{
+    JSValue obj = JS_NewObjectClass(ctx, class_id);
+    MetaCoclass *metaCoclass = (MetaCoclass *)JS_GetClassComoClass(ctx, class_id);
+    if (metaCoclass == nullptr)
+        goto jb_fail;
+
+    ComoJsObjectStub *stub;
+    stub = new ComoJsObjectStub(ctx, metaCoclass, thisObject);
+    if (stub == nullptr)
+        goto jb_fail;
+
+    JS_SetOpaque(obj, stub);
+    return obj;
+jb_fail:
+    JS_FreeValue(ctx, obj);
+    return JS_EXCEPTION;
+}
+
 void LoggerSetLevel()
 {
     Logger::SetLevel(Logger::VERBOSE);
