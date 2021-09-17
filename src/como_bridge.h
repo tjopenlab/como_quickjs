@@ -103,7 +103,7 @@ public:
         overridesInfo = overridesInfo_;
 
         metaCoclass_->GetConstructorNumber(constrsNumber);
-        Array<IMetaConstructor*> constrs_(methodNumber);
+        Array<IMetaConstructor*> constrs_(constrsNumber);
         ec = metaCoclass_->GetAllConstructors(constrs_);
         if (FAILED(ec)) {
             String str;

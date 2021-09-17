@@ -121,19 +121,39 @@ AutoPtr<IInterface> MetaCoclass::CreateObject()
 
 void MetaCoclass::constructObj(ComoJsObjectStub* stub, int argc, JSValueConst *argv)
 {
-    const char *signature = JS_ToCString(ctx, argv[0]);
-    AutoPtr<IMetaConstructor> constr;
+    if ((argc > 1) && JS_IsString(argv[0])) {
+        const char *signature = JS_ToCString(ctx, argv[0]);
+        AutoPtr<IMetaConstructor> constr;
 
-    ECode ec = metaCoclass->GetConstructor(signature, constr);
-    if (constr == nullptr) {
+        ECode ec = metaCoclass->GetConstructor(signature, constr);
+        if (constr == nullptr) {
+            std::string className = GetName();
+            std::string classNs = GetNamespace();
+
+            throw std::runtime_error("Can't construct object for "+classNs+"."+
+                                     className+" with signature "+signature);
+            stub->thisObject = nullptr;
+            return;
+        }
+        stub->methodimpl(constr, argc-1, &argv[1], true);
+    }
+    else {
+        Integer number;
+        Integer constrNumber = constrs.GetLength();
+        for (Integer i = 0;  i < constrNumber;  i++) {
+            IMetaConstructor *constr = constrs[i];
+            constr->GetParameterNumber(number);
+            if (number == argc) {
+                stub->methodimpl(constr, argc, argv, true);
+                return;
+            }
+        }
         std::string className = GetName();
         std::string classNs = GetNamespace();
-
-        throw std::runtime_error("Can't construct object for " + classNs + "." + className + " with signature " + signature);
+        throw std::runtime_error("Can't construct object for "+classNs+"."+className+
+                                 " with "+std::to_string(argc)+" parameters");
         stub->thisObject = nullptr;
-        return;
     }
-    stub->methodimpl(constr, argc, argv, true);
 }
 
 // ComoJsObjectStub
