@@ -205,14 +205,18 @@ JSValue ComoJsObjectStub::methodimpl(IMetaMethod *method, int argc, JSValueConst
 {
     ECode ec = 0;
     AutoPtr<IArgumentList> argList;
-    Boolean outArgs;
+    Integer outArgs;
     Integer paramNumber;
-    method->HasOutArguments(outArgs);
+    method->GetOutArgumentsNumber(outArgs);
     method->GetParameterNumber(paramNumber);
 
     JSValue out_JSValue;
     HANDLE *outResult = nullptr;
     if (outArgs) {
+        if (outArgs > 1) {
+            throw std::runtime_error("too much out parameters");
+        }
+
         outResult = (HANDLE*)calloc(sizeof(HANDLE), paramNumber);
     }
 
@@ -368,7 +372,18 @@ JSValue ComoJsObjectStub::methodimpl(IMetaMethod *method, int argc, JSValueConst
                         breakSignature(signature, signatureBreak);
                     }
 
-                    int class_id = JS_FindComoClass(ctx, signatureBreak[i].c_str());
+                    int class_id;
+                    HANDLE opaque;
+                    method->GetOpaque(opaque);
+
+                    if (opaque == 0) {
+                        class_id = JS_FindComoClass(ctx, signatureBreak[i].c_str());
+                        method->SetOpaque(reinterpret_cast<HANDLE>(opaque));
+                    }
+                    else {
+                        class_id = opaque;
+                    }
+
                     if (class_id >= 0) {
                         outResult[i] = reinterpret_cast<HANDLE>(malloc(sizeof(IInterface*)));
                         argList->SetOutputArgumentOfInterface(i, outResult[i]);
@@ -459,7 +474,18 @@ JSValue ComoJsObjectStub::methodimpl(IMetaMethod *method, int argc, JSValueConst
                         mCoclass_->GetName(name);
                         mCoclass_->GetNamespace(ns);
 
-                        int class_id = JS_FindComoClass(ctx, name.string());
+                        int class_id;
+                        HANDLE opaque;
+                        method->GetOpaque(opaque);
+
+                        if (opaque == 0) {
+                            class_id = JS_FindComoClass(ctx, name.string());
+                            method->SetOpaque(reinterpret_cast<HANDLE>(opaque));
+                        }
+                        else {
+                            class_id = opaque;
+                        }
+
                         if (class_id >= 0) {
                             out_JSValue = js_box_JSValue(ctx, class_id, thisObject_);
                         }
