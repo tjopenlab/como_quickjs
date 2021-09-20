@@ -135,6 +135,13 @@ extern "C" int js_como_init(JSContext *ctx, JSModuleDef *m)
         JS_NewClass(JS_GetRuntime(ctx), class_id, &js_como_class);
 
         js_como_proto_funcs = genComoProtoFuncs(ctx, metaComponent, metaCoclass);
+        if (js_como_proto_funcs == nullptr)
+            return 0;
+
+        // vector.push_back(), will put the elements of js_como_proto_funcs which should be freed
+        // before js_como_proto_funcs itself.
+        metaComponent->vector_void_p.push_back((void*)js_como_proto_funcs);
+
         como_proto = JS_NewObject(ctx);
         JS_SetPropertyFunctionList(ctx, como_proto, js_como_proto_funcs, metaCoclass->methodNumber);
 
